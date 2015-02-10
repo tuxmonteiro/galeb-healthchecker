@@ -23,6 +23,7 @@
     <org.apache.logging.log4j.version>2.1</org.apache.logging.log4j.version>
     <org.apache.commons.commons-lang3.version>3.3.2</org.apache.commons.commons-lang3.version>
     <org.quartz-scheduler.version>2.2.1</org.quartz-scheduler.version>
+    <org.apache.httpcomponents.version>4.0.2</org.apache.httpcomponents.version>
   </properties>
 
   <profiles>
@@ -113,6 +114,11 @@
       <groupId>com.openvraas</groupId>
       <artifactId>openvraas-services</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+      <version>${org.apache.httpcomponents.version}</version>
     </dependency>
   </dependencies>
 

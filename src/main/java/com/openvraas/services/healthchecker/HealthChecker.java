@@ -70,8 +70,10 @@ public class HealthChecker extends AbstractService implements JobListener {
                                               .build();
 
                 JobDataMap jobdataMap = new JobDataMap();
+                jobdataMap.put("tester", new Tester());
                 jobdataMap.put("farm", farm);
                 jobdataMap.put("logger", logger);
+                jobdataMap.put("eventbus", eventbus);
 
                 JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
                                                                        .setJobData(jobdataMap)
