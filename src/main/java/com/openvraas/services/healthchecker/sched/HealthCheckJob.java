@@ -1,6 +1,7 @@
 package com.openvraas.services.healthchecker.sched;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
@@ -60,25 +61,30 @@ public class HealthCheckJob implements Job {
 
             boolean isOk = false;
             try {
-                isOk = tester.connect(fullUrl)
+                isOk = tester.withUrl(fullUrl)
                              .withHealthCheckPath(healthCheckPath)
                              .withReturn(returnType, expectedReturn)
-                             .run();
+                             .connect();
 
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | InterruptedException | ExecutionException e) {
                 logger.debug(e);
             }
 
             if (isOk) {
-                logger.debug(url+" is OK");
+                loggerDebug(url+" is OK");
             } else {
-                logger.debug(url+" FAIL");
+                loggerDebug(url+" FAIL");
             }
 
         }
 
+        loggerDebug("Job HealthCheck done.");
+
+    }
+
+    private void loggerDebug(String message) {
         if (logger!=null) {
-            logger.debug("Job HealthCheck done.");
+            logger.debug(message);
         }
     }
 

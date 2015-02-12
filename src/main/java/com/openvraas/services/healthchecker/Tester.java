@@ -1,14 +1,14 @@
 package com.openvraas.services.healthchecker;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.CharBuffer;
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.config.AuthSchemes;
-import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.concurrent.FutureCallback;
@@ -29,7 +29,7 @@ public class Tester {
     private int defaultTimeout = 5000;
     private boolean isOk = false;
 
-    public Tester connect(String url) {
+    public Tester withUrl(String url) {
         this.url = url;
         return this;
     }
@@ -45,7 +45,7 @@ public class Tester {
         return this;
     }
 
-    public boolean run() throws RuntimeException, InterruptedException, ExecutionException {
+    public boolean connect() throws RuntimeException, InterruptedException, ExecutionException {
         if (url==null||healthCheckPath==null||returnType==null||expectedReturn==null) {
             return false;
         }
@@ -55,14 +55,7 @@ public class Tester {
             final CountDownLatch latch = new CountDownLatch(1);
             HttpGet request = new HttpGet(url);
             HttpAsyncRequestProducer producer = HttpAsyncMethods.create(request);
-            RequestConfig defaultRequestConfig = RequestConfig.custom()
-                    .setCookieSpec(CookieSpecs.BEST_MATCH)
-                    .setExpectContinueEnabled(true)
-                    .setStaleConnectionCheckEnabled(true)
-                    .setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST))
-                    .setProxyPreferredAuthSchemes(Arrays.asList(AuthSchemes.BASIC))
-                    .build();
-            RequestConfig requestConfig = RequestConfig.copy(defaultRequestConfig)
+            RequestConfig requestConfig = RequestConfig.copy(RequestConfig.DEFAULT)
                     .setSocketTimeout(defaultTimeout)
                     .setConnectTimeout(defaultTimeout)
                     .setConnectionRequestTimeout(defaultTimeout)
@@ -95,24 +88,46 @@ public class Tester {
                 @Override
                 public void cancelled() {
                     latch.countDown();
+                    isOk = false;
                 }
 
                 @Override
                 public void completed(HttpResponse response) {
                     latch.countDown();
 
-                    isOk = true;
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    InputStream contentIS = null;
+                    String content = "";
+                    try {
+                        contentIS = response.getEntity().getContent();
+                        content = IOUtils.toString(contentIS);
+
+                    } catch (IllegalStateException | IOException ignore) {
+                    }
+
+                    switch (returnType) {
+                        case "httpCode200":
+                            isOk = statusCode == 200;
+                            break;
+
+                        default:
+                            isOk = statusCode == 200 && expectedReturn.startsWith(content);
+                            break;
+                    }
 
                 }
 
                 @Override
                 public void failed(Exception e) {
                     latch.countDown();
-
+                    isOk = false;
                 }
 
             });
             latch.await();
+
+        } catch (RuntimeException e) {
+            isOk = false;
         } finally {
             try {
                 httpclient.close();
