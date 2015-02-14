@@ -9,8 +9,10 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
+import com.openvraas.core.controller.EntityController.Action;
 import com.openvraas.core.logging.Logger;
 import com.openvraas.core.model.Backend;
+import com.openvraas.core.model.Backend.Health;
 import com.openvraas.core.model.Farm;
 import com.openvraas.hazelcast.IEventBus;
 import com.openvraas.services.healthchecker.Tester;
@@ -45,6 +47,7 @@ public class HealthCheckJob implements Job {
         for (Backend backend : backends) {
             String url = backend.getId();
             String returnType = "string";
+            Backend.Health lastHealth = backend.getHealth();
 
             String healthCheckPath = (String) backend.getProperties().get("hcPath");
             if (healthCheckPath==null) {
@@ -71,9 +74,14 @@ public class HealthCheckJob implements Job {
             }
 
             if (isOk) {
+                backend.setHealth(Health.HEALTHY);
                 loggerDebug(url+" is OK");
             } else {
+                backend.setHealth(Health.DEADY);
                 loggerDebug(url+" FAIL");
+            }
+            if (backend.getHealth()!=lastHealth) {
+                eventbus.publishEntity(backend, Backend.class.getSimpleName().toLowerCase(), Action.CHANGE);
             }
 
         }
