@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.openvraas</groupId>
-  <artifactId>openvraas-healthchecker</artifactId>
-  <version>0.0.1</version>
+  <groupId>io.galeb</groupId>
+  <artifactId>galeb-healthchecker</artifactId>
+  <version>3.0.0-SNAPSHOT</version>
 
   <licenses>
     <license>
@@ -49,23 +49,23 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.openvraas</groupId>
-      <artifactId>openvraas-core</artifactId>
+      <groupId>io.galeb</groupId>
+      <artifactId>galeb-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.openvraas</groupId>
-      <artifactId>openvraas-undertow</artifactId>
+      <groupId>io.galeb</groupId>
+      <artifactId>galeb-undertow</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.openvraas</groupId>
-      <artifactId>openvraas-hazelcast</artifactId>
+      <groupId>io.galeb</groupId>
+      <artifactId>galeb-hazelcast</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.openvraas</groupId>
-      <artifactId>openvraas-services</artifactId>
+      <groupId>io.galeb</groupId>
+      <artifactId>galeb-services</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -143,7 +143,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <outputFile>target/openvraas-${project.version}-uber.jar</outputFile>
+              <outputFile>target/galeb-${project.version}-uber.jar</outputFile>
             </configuration>
           </execution>
         </executions>
@@ -154,7 +154,7 @@
         <configuration>
         <archive>
           <manifest>
-            <mainClass>com.openvraas.services.healthchecker.Starter</mainClass>
+            <mainClass>io.galeb.services.healthchecker.Starter</mainClass>
             <addClasspath>true</addClasspath>
           </manifest>
         </archive>
@@ -174,11 +174,25 @@
             <argument>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</argument>
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
             <argument>-jar</argument>
-            <argument>target/openvraas-${project.version}-uber.jar</argument>
+            <argument>target/galeb-${project.version}-uber.jar</argument>
           </arguments>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <distributionManagement>
+    <repository>
+        <id>artifactory</id>
+        <name>artifactory-releases</name>
+        <url>http://artifactory.globoi.com/artifactory/libs-release-local</url>
+    </repository>
+    <snapshotRepository>
+         <id>artifactory</id>
+         <name>artifactory-snapshots</name>
+         <url>http://artifactory.globoi.com/artifactory/libs-snapshot-local</url>
+    </snapshotRepository>
+  </distributionManagement>
+
 
 </project>

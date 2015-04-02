@@ -1,4 +1,12 @@
-package com.openvraas.services.healthchecker.sched;
+package io.galeb.services.healthchecker.sched;
+
+import io.galeb.core.controller.EntityController.Action;
+import io.galeb.core.logging.Logger;
+import io.galeb.core.model.Backend;
+import io.galeb.core.model.Farm;
+import io.galeb.core.model.Backend.Health;
+import io.galeb.hazelcast.IEventBus;
+import io.galeb.services.healthchecker.Tester;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -8,14 +16,6 @@ import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-
-import com.openvraas.core.controller.EntityController.Action;
-import com.openvraas.core.logging.Logger;
-import com.openvraas.core.model.Backend;
-import com.openvraas.core.model.Backend.Health;
-import com.openvraas.core.model.Farm;
-import com.openvraas.hazelcast.IEventBus;
-import com.openvraas.services.healthchecker.Tester;
 
 @DisallowConcurrentExecution
 public class HealthCheckJob implements Job {

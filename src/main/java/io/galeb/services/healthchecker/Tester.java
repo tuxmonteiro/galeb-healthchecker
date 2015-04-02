@@ -1,4 +1,4 @@
-package com.openvraas.services.healthchecker;
+package io.galeb.services.healthchecker;
 
 import java.io.IOException;
 import java.io.InputStream;

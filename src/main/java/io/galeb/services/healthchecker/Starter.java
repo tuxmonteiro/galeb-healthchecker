@@ -1,6 +1,7 @@
-package com.openvraas.services.healthchecker;
+package io.galeb.services.healthchecker;
 
-import com.openvraas.services.cdi.WeldContext;
+import io.galeb.services.cdi.WeldContext;
+
 
 public class Starter {
 

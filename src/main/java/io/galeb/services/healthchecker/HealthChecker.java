@@ -1,8 +1,10 @@
-package com.openvraas.services.healthchecker;
+package io.galeb.services.healthchecker;
 
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
+import io.galeb.services.AbstractService;
+import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
 import java.util.UUID;
 
@@ -18,12 +20,9 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 
-import com.openvraas.services.AbstractService;
-import com.openvraas.services.healthchecker.sched.HealthCheckJob;
-
 public class HealthChecker extends AbstractService implements JobListener {
 
-    private static final String PROP_HEALTHCHECKER_PREFIX   = "com.openvraas.healthcheck.";
+    private static final String PROP_HEALTHCHECKER_PREFIX   = "io.galeb.healthcheck.";
 
     private static final String PROP_HEALTHCHECKER_INTERVAL = PROP_HEALTHCHECKER_PREFIX+"interval";
 
