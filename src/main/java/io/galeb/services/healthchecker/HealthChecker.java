@@ -36,15 +36,11 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     @PostConstruct
     protected void init() {
-
         super.prelaunch();
-
         setupScheduler();
-
         startHealthCheckJob();
 
-        onLog("DEBUG", "ready");
-
+        logger.debug(String.format("%s ready", this.toString()));
     }
 
     private void setupScheduler() {
