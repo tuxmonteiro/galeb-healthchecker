@@ -33,7 +33,7 @@ public class Tester {
     private String healthCheckPath;
     private String returnType;
     private String expectedReturn;
-    private int defaultTimeout = 5000;
+    private final int defaultTimeout = 5000;
     private boolean isOk = false;
 
     public Tester withUrl(String url) {
@@ -56,25 +56,26 @@ public class Tester {
         if (url==null||healthCheckPath==null||returnType==null||expectedReturn==null) {
             return false;
         }
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.createDefault();
+        final CloseableHttpAsyncClient httpclient = HttpAsyncClients.createDefault();
         try {
             httpclient.start();
             final CountDownLatch latch = new CountDownLatch(1);
-            HttpGet request = new HttpGet(url);
-            HttpAsyncRequestProducer producer = HttpAsyncMethods.create(request);
-            RequestConfig requestConfig = RequestConfig.copy(RequestConfig.DEFAULT)
+            final HttpGet request = new HttpGet(url);
+            final HttpAsyncRequestProducer producer = HttpAsyncMethods.create(request);
+            final RequestConfig requestConfig = RequestConfig.copy(RequestConfig.DEFAULT)
                     .setSocketTimeout(defaultTimeout)
                     .setConnectTimeout(defaultTimeout)
                     .setConnectionRequestTimeout(defaultTimeout)
                     .build();
             request.setConfig(requestConfig);
-            AsyncCharConsumer<HttpResponse> consumer = new AsyncCharConsumer<HttpResponse>() {
+            final AsyncCharConsumer<HttpResponse> consumer = new AsyncCharConsumer<HttpResponse>() {
 
                 HttpResponse response;
 
                 @Override
                 protected void onCharReceived(CharBuffer buf, IOControl iocontrol)
                         throws IOException {
+                    return;
                 }
 
                 @Override
@@ -102,7 +103,7 @@ public class Tester {
                 public void completed(HttpResponse response) {
                     latch.countDown();
 
-                    int statusCode = response.getStatusLine().getStatusCode();
+                    final int statusCode = response.getStatusLine().getStatusCode();
                     InputStream contentIS = null;
                     String content = "";
                     try {
@@ -135,13 +136,13 @@ public class Tester {
             });
             latch.await();
 
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
             isOk = false;
             logger.debug(e);
         } finally {
             try {
                 httpclient.close();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 logger.debug(e);
             }
         }
