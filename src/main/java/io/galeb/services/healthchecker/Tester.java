@@ -1,10 +1,14 @@
 package io.galeb.services.healthchecker;
 
+import io.galeb.core.logging.Logger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.CharBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+
+import javax.inject.Inject;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpException;
@@ -21,6 +25,9 @@ import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.protocol.HttpContext;
 
 public class Tester {
+
+    @Inject
+    protected Logger logger;
 
     private String url;
     private String healthCheckPath;
@@ -102,7 +109,8 @@ public class Tester {
                         contentIS = response.getEntity().getContent();
                         content = IOUtils.toString(contentIS);
 
-                    } catch (IllegalStateException | IOException ignore) {
+                    } catch (IllegalStateException | IOException e) {
+                        logger.debug(e);
                     }
 
                     switch (returnType) {
@@ -121,6 +129,7 @@ public class Tester {
                 public void failed(Exception e) {
                     latch.countDown();
                     isOk = false;
+                    logger.debug(e);
                 }
 
             });
@@ -128,10 +137,12 @@ public class Tester {
 
         } catch (RuntimeException e) {
             isOk = false;
+            logger.debug(e);
         } finally {
             try {
                 httpclient.close();
-            } catch (IOException ignore) {
+            } catch (IOException e) {
+                logger.debug(e);
             }
         }
         return isOk;
