@@ -1,11 +1,11 @@
 package io.galeb.services.healthchecker.sched;
 
 import io.galeb.core.controller.EntityController.Action;
+import io.galeb.core.eventbus.IEventBus;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.Farm;
 import io.galeb.core.model.Backend.Health;
-import io.galeb.hazelcast.IEventBus;
 import io.galeb.services.healthchecker.Tester;
 
 import java.util.List;
