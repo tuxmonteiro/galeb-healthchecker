@@ -63,11 +63,6 @@
       <artifactId>galeb-hazelcast</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>io.galeb</groupId>
-      <artifactId>galeb-services</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>org.mortbay.jetty.alpn</groupId>
@@ -170,8 +165,6 @@
             <argument>-server</argument>
             <argument>-Xms1024m</argument>
             <argument>-Xmx1024m</argument>
-            <argument>-Dorg.jboss.logging.provider=log4j2</argument>
-            <argument>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</argument>
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
             <argument>-jar</argument>
             <argument>target/galeb-${project.version}-uber.jar</argument>

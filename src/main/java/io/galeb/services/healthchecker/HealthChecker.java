@@ -3,7 +3,7 @@ package io.galeb.services.healthchecker;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
-import io.galeb.services.AbstractService;
+import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
 import java.util.UUID;
