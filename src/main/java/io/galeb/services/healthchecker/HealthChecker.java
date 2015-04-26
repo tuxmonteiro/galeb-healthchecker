@@ -1,8 +1,8 @@
 package io.galeb.services.healthchecker;
 
-import static org.quartz.JobBuilder.*;
-import static org.quartz.TriggerBuilder.*;
-import static org.quartz.SimpleScheduleBuilder.*;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+import static org.quartz.TriggerBuilder.newTrigger;
 import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
@@ -40,7 +40,7 @@ public class HealthChecker extends AbstractService implements JobListener {
         setupScheduler();
         startHealthCheckJob();
 
-        logger.debug(String.format("%s ready", this.toString()));
+        logger.debug(String.format("%s ready", toString()));
     }
 
     private void setupScheduler() {
@@ -85,7 +85,7 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     @Override
     public String getName() {
-        return this.toString();
+        return toString();
     }
 
     @Override
