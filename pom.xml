@@ -166,6 +166,7 @@
             <argument>-Xms1024m</argument>
             <argument>-Xmx1024m</argument>
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
+            <argument>-Dhazelcast.config=hazelcast.xml</argument>
             <argument>-jar</argument>
             <argument>target/galeb-${project.version}-uber.jar</argument>
           </arguments>
