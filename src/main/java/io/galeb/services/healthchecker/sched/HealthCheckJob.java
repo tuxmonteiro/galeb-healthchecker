@@ -23,7 +23,7 @@ public class HealthCheckJob implements Job {
     private Tester tester;
     private Logger logger;
     private Farm farm;
-    private IEventBus eventbus;
+    private IEventBus eventbus = IEventBus.NULL;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
