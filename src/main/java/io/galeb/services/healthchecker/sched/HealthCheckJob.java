@@ -4,8 +4,8 @@ import io.galeb.core.controller.EntityController.Action;
 import io.galeb.core.eventbus.IEventBus;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
-import io.galeb.core.model.Farm;
 import io.galeb.core.model.Backend.Health;
+import io.galeb.core.model.Farm;
 import io.galeb.services.healthchecker.Tester;
 
 import java.util.List;
@@ -30,11 +30,12 @@ public class HealthCheckJob implements Job {
 
         final JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
 
-        if (tester==null) {
-            tester = (Tester) jobDataMap.get("tester");
-        }
         if (logger==null) {
             logger = (Logger) jobDataMap.get("logger");
+        }
+        if (tester==null) {
+            tester = (Tester) jobDataMap.get("tester");
+            tester.setLogger(logger);
         }
         if (farm==null) {
             farm = (Farm) jobDataMap.get("farm");

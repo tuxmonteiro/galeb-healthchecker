@@ -3,6 +3,8 @@ package io.galeb.services.healthchecker;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
+import io.galeb.core.controller.EntityController.Action;
+import io.galeb.core.json.JsonObject;
 import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
@@ -102,6 +104,11 @@ public class HealthChecker extends AbstractService implements JobListener {
     public void jobWasExecuted(JobExecutionContext context,
             JobExecutionException jobException) {
         logger.debug(context.getJobDetail().getKey().getName()+" was executed");
+    }
+
+    @Override
+    public void handleController(JsonObject json, Action action) {
+        // future
     }
 
 }

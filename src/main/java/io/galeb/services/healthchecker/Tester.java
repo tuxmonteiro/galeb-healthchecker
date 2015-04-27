@@ -8,8 +8,6 @@ import java.nio.CharBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import javax.inject.Inject;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -26,15 +24,17 @@ import org.apache.http.protocol.HttpContext;
 
 public class Tester {
 
-    @Inject
-    protected Logger logger;
-
+    private Logger logger;
     private String url;
     private String healthCheckPath;
     private String returnType;
     private String expectedReturn;
     private final int defaultTimeout = 5000;
     private boolean isOk = false;
+
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
 
     public Tester withUrl(String url) {
         this.url = url;
@@ -81,7 +81,7 @@ public class Tester {
                 @Override
                 protected HttpResponse buildResult(HttpContext context)
                         throws Exception {
-                    return this.response;
+                    return response;
                 }
 
                 @Override
