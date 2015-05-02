@@ -22,7 +22,6 @@
     <org.jboss.logging.version>3.2.0.Final</org.jboss.logging.version>
     <org.apache.logging.log4j.version>2.1</org.apache.logging.log4j.version>
     <org.apache.commons.commons-lang3.version>3.3.2</org.apache.commons.commons-lang3.version>
-    <org.quartz-scheduler.version>2.2.1</org.quartz-scheduler.version>
     <org.apache.httpcomponents.version>4.0.2</org.apache.httpcomponents.version>
   </properties>
 
@@ -94,16 +93,6 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-jul</artifactId>
       <version>${org.apache.logging.log4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.quartz-scheduler</groupId>
-      <artifactId>quartz</artifactId>
-      <version>${org.quartz-scheduler.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.quartz-scheduler</groupId>
-      <artifactId>quartz-jobs</artifactId>
-      <version>${org.quartz-scheduler.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
