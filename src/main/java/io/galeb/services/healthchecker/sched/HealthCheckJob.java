@@ -5,6 +5,7 @@ import io.galeb.core.eventbus.IEventBus;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.Backend.Health;
+import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Farm;
 import io.galeb.services.healthchecker.Tester;
 
@@ -46,18 +47,19 @@ public class HealthCheckJob implements Job {
 
         List<Backend> backends = farm.getBackends();
         for (Backend backend : backends) {
+            BackendPool backendPool = farm.getBackendPool(backend.getParentId());
             String url = backend.getId();
             String returnType = "string";
             Backend.Health lastHealth = backend.getHealth();
 
-            String healthCheckPath = (String) backend.getProperties().get("hcPath");
+            String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
             if (healthCheckPath==null) {
                 healthCheckPath = "/";
             }
 
             String fullUrl = url + healthCheckPath;
 
-            String expectedReturn = (String) backend.getProperties().get("hcExpectedReturn");
+            String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
             if (expectedReturn==null) {
                 returnType = "httpCode200";
                 expectedReturn="OK";

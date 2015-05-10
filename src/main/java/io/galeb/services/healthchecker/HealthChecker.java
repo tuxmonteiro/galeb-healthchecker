@@ -24,7 +24,7 @@ import org.quartz.impl.StdSchedulerFactory;
 
 public class HealthChecker extends AbstractService implements JobListener {
 
-    private static final String PROP_HEALTHCHECKER_PREFIX   = "io.galeb.healthcheck.";
+    private static final String PROP_HEALTHCHECKER_PREFIX   = HealthChecker.class.getPackage().getName()+".";
 
     private static final String PROP_HEALTHCHECKER_INTERVAL = PROP_HEALTHCHECKER_PREFIX+"interval";
 
