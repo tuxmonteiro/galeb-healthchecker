@@ -51,7 +51,7 @@ public class HealthChecker extends AbstractService implements JobListener {
     }
 
     @PostConstruct
-    protected void init() {
+    public void init() {
         super.prelaunch();
         setupScheduler();
         startHealthCheckJob();
