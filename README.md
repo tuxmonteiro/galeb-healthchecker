@@ -1,5 +1,6 @@
 Galeb - HealthChecker Service
 ===========================
+[![Build Status](https://travis-ci.org/galeb/galeb3-healthchecker.svg)](https://travis-ci.org/galeb/galeb3-healthchecker)
 
 Galeb is a dynamic software router built on JBOSS Undertow and XNIO.<br/>
 It's a massively parallel routing system running a shared-nothing architecture.
