@@ -1,6 +1,5 @@
-Open Virtual Router as a Service
+Galeb - HealthChecker Service
 ===========================
-<h1>OpenVRaaS - HealthChecker Service</h1>
 
 OpenVRaas is a dynamic software router built on JBOSS Undertow and XNIO.<br/>
 It's a massively parallel routing system running a shared-nothing architecture.
