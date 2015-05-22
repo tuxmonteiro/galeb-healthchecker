@@ -23,9 +23,11 @@ import io.galeb.core.model.Backend;
 import io.galeb.core.model.Backend.Health;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Farm;
+import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.services.healthchecker.Tester;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.quartz.DisallowConcurrentExecution;
@@ -61,48 +63,51 @@ public class HealthCheckJob implements Job {
             eventbus = (IEventBus) jobDataMap.get("eventbus");
         }
 
-        List<Backend> backends = farm.getBackends();
-        for (Backend backend : backends) {
-            BackendPool backendPool = farm.getBackendPool(backend.getParentId());
-            String url = backend.getId();
-            String returnType = "string";
-            Backend.Health lastHealth = backend.getHealth();
+        final Set<Backend> backends = farm.getBackends();
+        for (final Backend backend : backends) {
+            final BackendPoolCollection backendPoolCollection = (BackendPoolCollection) farm.getBackendPools();
+            final List<BackendPool> backendPools = backendPoolCollection.getListByID(backend.getParentId());
+            if (!backendPools.isEmpty()) {
+                final BackendPool backendPool = backendPools.get(0);
+                final String url = backend.getId();
+                String returnType = "string";
+                final Backend.Health lastHealth = backend.getHealth();
 
-            String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
-            if (healthCheckPath==null) {
-                healthCheckPath = "/";
+                String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
+                if (healthCheckPath==null) {
+                    healthCheckPath = "/";
+                }
+
+                final String fullUrl = url + healthCheckPath;
+
+                String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
+                if (expectedReturn==null) {
+                    returnType = "httpCode200";
+                    expectedReturn="OK";
+                }
+
+                boolean isOk = false;
+                try {
+                    isOk = tester.withUrl(fullUrl)
+                                 .withHealthCheckPath(healthCheckPath)
+                                 .withReturn(returnType, expectedReturn)
+                                 .connect();
+
+                } catch (RuntimeException | InterruptedException | ExecutionException e) {
+                    logger.debug(e);
+                }
+
+                if (isOk) {
+                    backend.setHealth(Health.HEALTHY);
+                    loggerDebug(url+" is OK");
+                } else {
+                    backend.setHealth(Health.DEADY);
+                    loggerDebug(url+" FAIL");
+                }
+                if (backend.getHealth()!=lastHealth) {
+                    eventbus.publishEntity(backend, Backend.class.getSimpleName().toLowerCase(), Action.CHANGE);
+                }
             }
-
-            String fullUrl = url + healthCheckPath;
-
-            String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
-            if (expectedReturn==null) {
-                returnType = "httpCode200";
-                expectedReturn="OK";
-            }
-
-            boolean isOk = false;
-            try {
-                isOk = tester.withUrl(fullUrl)
-                             .withHealthCheckPath(healthCheckPath)
-                             .withReturn(returnType, expectedReturn)
-                             .connect();
-
-            } catch (RuntimeException | InterruptedException | ExecutionException e) {
-                logger.debug(e);
-            }
-
-            if (isOk) {
-                backend.setHealth(Health.HEALTHY);
-                loggerDebug(url+" is OK");
-            } else {
-                backend.setHealth(Health.DEADY);
-                loggerDebug(url+" FAIL");
-            }
-            if (backend.getHealth()!=lastHealth) {
-                eventbus.publishEntity(backend, Backend.class.getSimpleName().toLowerCase(), Action.CHANGE);
-            }
-
         }
 
         loggerDebug("Job HealthCheck done.");
