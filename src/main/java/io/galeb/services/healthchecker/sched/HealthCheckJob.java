@@ -22,6 +22,7 @@ import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.Backend.Health;
 import io.galeb.core.model.BackendPool;
+import io.galeb.core.model.Entity;
 import io.galeb.core.model.Farm;
 import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.services.healthchecker.Tester;
@@ -63,15 +64,15 @@ public class HealthCheckJob implements Job {
             eventbus = (IEventBus) jobDataMap.get("eventbus");
         }
 
-        final Set<Backend> backends = farm.getBackends();
-        for (final Backend backend : backends) {
-            final BackendPoolCollection backendPoolCollection = (BackendPoolCollection) farm.getBackendPools();
-            final List<BackendPool> backendPools = backendPoolCollection.getListByID(backend.getParentId());
+        final Set<Entity> backends = farm.getCollection(Backend.class);
+        for (final Entity backend : backends) {
+            final BackendPoolCollection backendPoolCollection = (BackendPoolCollection) farm.getCollection(BackendPool.class);
+            final List<Entity> backendPools = backendPoolCollection.getListByID(backend.getParentId());
             if (!backendPools.isEmpty()) {
-                final BackendPool backendPool = backendPools.get(0);
+                final BackendPool backendPool = (BackendPool) backendPools.get(0);
                 final String url = backend.getId();
                 String returnType = "string";
-                final Backend.Health lastHealth = backend.getHealth();
+                final Backend.Health lastHealth = ((Backend) backend).getHealth();
 
                 String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
                 if (healthCheckPath==null) {
@@ -98,13 +99,13 @@ public class HealthCheckJob implements Job {
                 }
 
                 if (isOk) {
-                    backend.setHealth(Health.HEALTHY);
+                    ((Backend) backend).setHealth(Health.HEALTHY);
                     loggerDebug(url+" is OK");
                 } else {
-                    backend.setHealth(Health.DEADY);
+                    ((Backend) backend).setHealth(Health.DEADY);
                     loggerDebug(url+" FAIL");
                 }
-                if (backend.getHealth()!=lastHealth) {
+                if (((Backend) backend).getHealth()!=lastHealth) {
                     eventbus.publishEntity(backend, Backend.class.getSimpleName().toLowerCase(), Action.CHANGE);
                 }
             }
