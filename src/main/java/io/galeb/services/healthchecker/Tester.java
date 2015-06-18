@@ -24,6 +24,8 @@ import java.nio.CharBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import javax.ws.rs.core.HttpHeaders;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -47,9 +49,15 @@ public class Tester {
     private String expectedReturn;
     private final int defaultTimeout = 5000;
     private boolean isOk = false;
+    private String host;
 
     public void setLogger(Logger logger) {
         this.logger = logger;
+    }
+
+    public Tester withHost(String host) {
+        this.host = host;
+        return this;
     }
 
     public Tester withUrl(String url) {
@@ -77,6 +85,7 @@ public class Tester {
             httpclient.start();
             final CountDownLatch latch = new CountDownLatch(1);
             final HttpGet request = new HttpGet(url);
+            request.setHeader(HttpHeaders.HOST, host);
             final HttpAsyncRequestProducer producer = HttpAsyncMethods.create(request);
             final RequestConfig requestConfig = RequestConfig.copy(RequestConfig.DEFAULT)
                     .setSocketTimeout(defaultTimeout)

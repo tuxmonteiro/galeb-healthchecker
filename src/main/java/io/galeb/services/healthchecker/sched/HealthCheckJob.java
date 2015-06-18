@@ -24,6 +24,7 @@ import io.galeb.core.model.Backend.Health;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Farm;
+import io.galeb.core.model.Rule;
 import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.services.healthchecker.Tester;
 
@@ -73,6 +74,10 @@ public class HealthCheckJob implements Job {
                 final String url = backend.getId();
                 String returnType = "string";
                 final Backend.Health lastHealth = ((Backend) backend).getHealth();
+                String host = farm.getCollection(Rule.class).stream()
+                        .filter(rule -> backendPool.getId().equalsIgnoreCase((String) rule.getProperty(Rule.PROP_TARGET_ID)))
+                        .findFirst()
+                        .get().getParentId();
 
                 String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
                 if (healthCheckPath==null) {
@@ -90,6 +95,7 @@ public class HealthCheckJob implements Job {
                 boolean isOk = false;
                 try {
                     isOk = tester.withUrl(fullUrl)
+                                 .withHost(host)
                                  .withHealthCheckPath(healthCheckPath)
                                  .withReturn(returnType, expectedReturn)
                                  .connect();
