@@ -29,6 +29,7 @@ import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.services.healthchecker.Tester;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -74,10 +75,14 @@ public class HealthCheckJob implements Job {
                 final String url = backend.getId();
                 String returnType = "string";
                 final Backend.Health lastHealth = ((Backend) backend).getHealth();
-                String host = farm.getCollection(Rule.class).stream()
-                        .filter(rule -> backendPool.getId().equalsIgnoreCase((String) rule.getProperty(Rule.PROP_TARGET_ID)))
-                        .findFirst()
-                        .get().getParentId();
+
+                String host = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_HOST);
+                if (host==null) {
+                    Optional<Entity> rule = farm.getCollection(Rule.class).stream()
+                            .filter(r -> backendPool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
+                            .findAny();
+                    host = rule.isPresent() ? rule.get().getParentId() : "UNDEF";
+                }
 
                 String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
                 if (healthCheckPath==null) {
