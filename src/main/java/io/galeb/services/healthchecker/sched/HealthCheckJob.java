@@ -81,7 +81,7 @@ public class HealthCheckJob implements Job {
                     Optional<Entity> rule = farm.getCollection(Rule.class).stream()
                             .filter(r -> backendPool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
                             .findAny();
-                    host = rule.isPresent() ? rule.get().getParentId() : "UNDEF";
+                    host = rule.isPresent() ? rule.get().getParentId() : url;
                 }
 
                 String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
