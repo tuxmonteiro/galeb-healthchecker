@@ -19,6 +19,7 @@ package io.galeb.services.healthchecker;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
+import io.galeb.core.sched.QuartzScheduler;
 import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
@@ -41,6 +42,8 @@ public class HealthChecker extends AbstractService implements JobListener {
     private static final String PROP_HEALTHCHECKER_PREFIX   = HealthChecker.class.getPackage().getName()+".";
 
     private static final String PROP_HEALTHCHECKER_INTERVAL = PROP_HEALTHCHECKER_PREFIX+"interval";
+
+    public static final String TESTER_NAME = "tester";
 
     private Scheduler scheduler;
 
@@ -81,10 +84,10 @@ public class HealthChecker extends AbstractService implements JobListener {
                                               .build();
 
                 JobDataMap jobdataMap = new JobDataMap();
-                jobdataMap.put("tester", new Tester());
-                jobdataMap.put("farm", farm);
-                jobdataMap.put("logger", logger);
-                jobdataMap.put("eventbus", eventbus);
+                jobdataMap.put(TESTER_NAME, new Tester());
+                jobdataMap.put(QuartzScheduler.FARM, farm);
+                jobdataMap.put(QuartzScheduler.LOGGER, logger);
+                jobdataMap.put(QuartzScheduler.DISTRIBUTEDMAP, distributedMap);
 
                 JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
                                                                        .setJobData(jobdataMap)

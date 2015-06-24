@@ -16,8 +16,7 @@
 
 package io.galeb.services.healthchecker.sched;
 
-import io.galeb.core.controller.EntityController.Action;
-import io.galeb.core.eventbus.IEventBus;
+import io.galeb.core.cluster.DistributedMap;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.Backend.Health;
@@ -26,6 +25,8 @@ import io.galeb.core.model.Entity;
 import io.galeb.core.model.Farm;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.collections.BackendPoolCollection;
+import io.galeb.core.sched.QuartzScheduler;
+import io.galeb.services.healthchecker.HealthChecker;
 import io.galeb.services.healthchecker.Tester;
 
 import java.util.List;
@@ -45,25 +46,26 @@ public class HealthCheckJob implements Job {
     private Tester tester;
     private Logger logger;
     private Farm farm;
-    private IEventBus eventbus = IEventBus.NULL;
+    private DistributedMap<String, Entity> distributedMap;
 
+    @SuppressWarnings("unchecked")
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
 
         final JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
 
         if (logger==null) {
-            logger = (Logger) jobDataMap.get("logger");
+            logger = (Logger) jobDataMap.get(QuartzScheduler.LOGGER);
         }
         if (tester==null) {
-            tester = (Tester) jobDataMap.get("tester");
+            tester = (Tester) jobDataMap.get(HealthChecker.TESTER_NAME);
             tester.setLogger(logger);
         }
         if (farm==null) {
-            farm = (Farm) jobDataMap.get("farm");
+            farm = (Farm) jobDataMap.get(QuartzScheduler.FARM);
         }
-        if (eventbus==null) {
-            eventbus = (IEventBus) jobDataMap.get("eventbus");
+        if (distributedMap==null) {
+            distributedMap = (DistributedMap<String, Entity>) jobDataMap.get(QuartzScheduler.DISTRIBUTEDMAP);
         }
 
         final Set<Entity> backends = farm.getCollection(Backend.class);
@@ -117,7 +119,7 @@ public class HealthCheckJob implements Job {
                     loggerDebug(url+" FAIL");
                 }
                 if (((Backend) backend).getHealth()!=lastHealth) {
-                    eventbus.publishEntity(backend, Backend.class.getSimpleName().toLowerCase(), Action.CHANGE);
+                    distributedMap.getMap(Backend.class.getName()).put(backend.getId(), backend);
                 }
             }
         }
