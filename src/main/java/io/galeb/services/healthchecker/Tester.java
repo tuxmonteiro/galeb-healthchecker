@@ -21,6 +21,7 @@ import io.galeb.core.logging.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.CharBuffer;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -42,7 +43,7 @@ import org.apache.http.protocol.HttpContext;
 
 public class Tester {
 
-    private Logger logger;
+    private Optional<Logger> logger;
     private String url;
     private String healthCheckPath;
     private String returnType;
@@ -51,7 +52,7 @@ public class Tester {
     private boolean isOk = false;
     private String host;
 
-    public void setLogger(Logger logger) {
+    public void setLogger(Optional<Logger> logger) {
         this.logger = logger;
     }
 
@@ -136,26 +137,20 @@ public class Tester {
                         content = IOUtils.toString(contentIS);
 
                     } catch (IllegalStateException | IOException e) {
-                        logger.debug(e);
+                        logger.ifPresent(log -> log.debug(e));
                     }
 
-                    switch (returnType) {
-                        case "httpCode200":
-                            isOk = statusCode == 200;
-                            break;
-
-                        default:
-                            isOk = statusCode == 200 && expectedReturn.startsWith(content);
-                            break;
+                    if (returnType.startsWith("httpCode")) {
+                        returnType = returnType.replaceFirst("httpCode", "");
                     }
-
+                    isOk = statusCode == Integer.parseInt(returnType);
                 }
 
                 @Override
                 public void failed(Exception e) {
                     latch.countDown();
                     isOk = false;
-                    logger.debug(e);
+                    logger.ifPresent(log -> log.debug(e));
                 }
 
             });
@@ -163,12 +158,12 @@ public class Tester {
 
         } catch (final RuntimeException e) {
             isOk = false;
-            logger.debug(e);
+            logger.ifPresent(log -> log.error(e));
         } finally {
             try {
                 httpclient.close();
             } catch (final IOException e) {
-                logger.debug(e);
+                logger.ifPresent(log -> log.debug(e));
             }
         }
         return isOk;
