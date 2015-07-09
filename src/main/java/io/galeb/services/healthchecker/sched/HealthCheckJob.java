@@ -24,14 +24,13 @@ import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Farm;
 import io.galeb.core.model.Rule;
+import io.galeb.core.model.collections.BackendCollection;
 import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.core.sched.QuartzScheduler;
 import io.galeb.services.healthchecker.HealthChecker;
 import io.galeb.services.healthchecker.Tester;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.quartz.DisallowConcurrentExecution;
@@ -44,7 +43,7 @@ import org.quartz.JobExecutionException;
 public class HealthCheckJob implements Job {
 
     private Tester tester;
-    private Logger logger;
+    private Optional<Logger> logger = Optional.empty();
     private Farm farm;
     private DistributedMap<String, Entity> distributedMap;
 
@@ -54,8 +53,8 @@ public class HealthCheckJob implements Job {
 
         final JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
 
-        if (logger==null) {
-            logger = (Logger) jobDataMap.get(QuartzScheduler.LOGGER);
+        if (!logger.isPresent()) {
+            logger = Optional.ofNullable((Logger) jobDataMap.get(QuartzScheduler.LOGGER));
         }
         if (tester==null) {
             tester = (Tester) jobDataMap.get(HealthChecker.TESTER_NAME);
@@ -68,70 +67,73 @@ public class HealthCheckJob implements Job {
             distributedMap = (DistributedMap<String, Entity>) jobDataMap.get(QuartzScheduler.DISTRIBUTEDMAP);
         }
 
-        final Set<Entity> backends = farm.getCollection(Backend.class);
-        for (final Entity backend : backends) {
-            final BackendPoolCollection backendPoolCollection = (BackendPoolCollection) farm.getCollection(BackendPool.class);
-            final List<Entity> backendPools = backendPoolCollection.getListByID(backend.getParentId());
-            if (!backendPools.isEmpty()) {
-                final BackendPool backendPool = (BackendPool) backendPools.get(0);
-                final String url = backend.getId();
-                String returnType = "string";
-                final Backend.Health lastHealth = ((Backend) backend).getHealth();
+        logger.ifPresent(log -> log.info("=== " + this.getClass().getSimpleName() + " ==="));
+        final BackendPoolCollection backendPoolCollection = (BackendPoolCollection) farm.getCollection(BackendPool.class);
+        final BackendCollection backendCollection = (BackendCollection) farm.getCollection(Backend.class);
 
-                String host = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_HOST);
-                if (host==null) {
-                    Optional<Entity> rule = farm.getCollection(Rule.class).stream()
-                            .filter(r -> backendPool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
-                            .findAny();
-                    host = rule.isPresent() ? rule.get().getParentId() : url;
-                }
+        if (!backendPoolCollection.isEmpty() && !backendCollection.isEmpty()) {
+            backendCollection.stream()
+                .forEach(backend -> {
 
-                String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
-                if (healthCheckPath==null) {
-                    healthCheckPath = "/";
-                }
+                    final BackendPool backendPool = (BackendPool) backendPoolCollection.stream()
+                                                        .filter(pool -> pool.getId().equals(backend.getParentId()))
+                                                        .findAny().get();
 
-                final String fullUrl = url + healthCheckPath;
+                    final String url = backend.getId();
+                    String returnType = "string";
+                    final Backend.Health lastHealth = ((Backend) backend).getHealth();
 
-                String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
-                if (expectedReturn==null) {
-                    returnType = "httpCode200";
-                    expectedReturn="OK";
-                }
+                    String host = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_HOST);
+                    if (host==null) {
+                        Optional<Entity> rule = farm.getCollection(Rule.class).stream()
+                                .filter(r -> backendPool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
+                                .findAny();
+                        host = rule.isPresent() ? rule.get().getParentId() : url;
+                    }
 
-                boolean isOk = false;
-                try {
-                    isOk = tester.withUrl(fullUrl)
-                                 .withHost(host)
-                                 .withHealthCheckPath(healthCheckPath)
-                                 .withReturn(returnType, expectedReturn)
-                                 .connect();
+                    String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
+                    if (healthCheckPath==null) {
+                        healthCheckPath = System.getProperty(HealthChecker.PROP_HEALTHCHECKER_DEF_PATH, "/");
+                    }
 
-                } catch (RuntimeException | InterruptedException | ExecutionException e) {
-                    logger.debug(e);
-                }
+                    final String fullUrl = url + healthCheckPath;
 
-                if (isOk) {
-                    ((Backend) backend).setHealth(Health.HEALTHY);
-                    loggerDebug(url+" is OK");
-                } else {
-                    ((Backend) backend).setHealth(Health.DEADY);
-                    loggerDebug(url+" FAIL");
-                }
-                if (((Backend) backend).getHealth()!=lastHealth) {
-                    distributedMap.getMap(Backend.class.getName()).put(backend.getId(), backend);
-                }
-            }
+                    String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
+                    if (expectedReturn==null) {
+                        expectedReturn = System.getProperty(HealthChecker.PROP_HEALTHCHECKER_DEF_STATUS, "OK");
+                        returnType = "httpCode200";
+                    }
+
+                    boolean isOk = false;
+                    try {
+                        isOk = tester.withUrl(fullUrl)
+                                     .withHost(host)
+                                     .withHealthCheckPath(healthCheckPath)
+                                     .withReturn(returnType, expectedReturn)
+                                     .connect();
+
+                    } catch (RuntimeException | InterruptedException | ExecutionException e) {
+                        logger.ifPresent(log -> log.debug(e));
+                    }
+
+                    if (isOk) {
+                        ((Backend) backend).setHealth(Health.HEALTHY);
+                    } else {
+                        ((Backend) backend).setHealth(Health.DEADY);
+                    }
+                    if (((Backend) backend).getHealth()!=lastHealth) {
+                        if (isOk) {
+                            logger.ifPresent(log -> log.info(url+" is OK"));
+                        } else {
+                            logger.ifPresent(log -> log.warn(url+" FAIL"));
+                        }
+                        distributedMap.getMap(Backend.class.getName()).put(backend.getId(), backend);
+                    }
+                });
         }
 
-        loggerDebug("Job HealthCheck done.");
+        logger.ifPresent(log -> log.debug("Job HealthCheck done."));
 
-    }
-
-    private void loggerDebug(String message) {
-        if (logger!=null) {
-            logger.debug(message);
-        }
     }
 
 }
