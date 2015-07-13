@@ -75,59 +75,64 @@ public class HealthCheckJob implements Job {
             backendCollection.stream()
                 .forEach(backend -> {
 
-                    final BackendPool backendPool = (BackendPool) backendPoolCollection.stream()
+                    final Optional<Entity> backendPoolOptional = backendPoolCollection.stream()
                                                         .filter(pool -> pool.getId().equals(backend.getParentId()))
-                                                        .findAny().get();
+                                                        .findAny();
 
-                    final String url = backend.getId();
-                    String returnType = "string";
-                    final Backend.Health lastHealth = ((Backend) backend).getHealth();
+                    if (backendPoolOptional.isPresent()) {
 
-                    String host = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_HOST);
-                    if (host==null) {
-                        Optional<Entity> rule = farm.getCollection(Rule.class).stream()
-                                .filter(r -> backendPool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
-                                .findAny();
-                        host = rule.isPresent() ? rule.get().getParentId() : url;
-                    }
+                        BackendPool backendPool = (BackendPool) backendPoolOptional.get();
 
-                    String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
-                    if (healthCheckPath==null) {
-                        healthCheckPath = System.getProperty(HealthChecker.PROP_HEALTHCHECKER_DEF_PATH, "/");
-                    }
+                        final String url = backend.getId();
+                        String returnType = "string";
+                        final Backend.Health lastHealth = ((Backend) backend).getHealth();
 
-                    final String fullUrl = url + healthCheckPath;
-
-                    String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
-                    if (expectedReturn==null) {
-                        expectedReturn = System.getProperty(HealthChecker.PROP_HEALTHCHECKER_DEF_STATUS, "OK");
-                        returnType = "httpCode200";
-                    }
-
-                    boolean isOk = false;
-                    try {
-                        isOk = tester.withUrl(fullUrl)
-                                     .withHost(host)
-                                     .withHealthCheckPath(healthCheckPath)
-                                     .withReturn(returnType, expectedReturn)
-                                     .connect();
-
-                    } catch (RuntimeException | InterruptedException | ExecutionException e) {
-                        logger.ifPresent(log -> log.debug(e));
-                    }
-
-                    if (isOk) {
-                        ((Backend) backend).setHealth(Health.HEALTHY);
-                    } else {
-                        ((Backend) backend).setHealth(Health.DEADY);
-                    }
-                    if (((Backend) backend).getHealth()!=lastHealth) {
-                        if (isOk) {
-                            logger.ifPresent(log -> log.info(url+" is OK"));
-                        } else {
-                            logger.ifPresent(log -> log.warn(url+" FAIL"));
+                        String host = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_HOST);
+                        if (host==null) {
+                            Optional<Entity> rule = farm.getCollection(Rule.class).stream()
+                                    .filter(r -> backendPool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
+                                    .findAny();
+                            host = rule.isPresent() ? rule.get().getParentId() : url;
                         }
-                        distributedMap.getMap(Backend.class.getName()).put(backend.getId(), backend);
+
+                        String healthCheckPath = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_PATH);
+                        if (healthCheckPath==null) {
+                            healthCheckPath = System.getProperty(HealthChecker.PROP_HEALTHCHECKER_DEF_PATH, "/");
+                        }
+
+                        final String fullUrl = url + healthCheckPath;
+
+                        String expectedReturn = (String) backendPool.getProperty(BackendPool.PROP_HEALTHCHECK_RETURN);
+                        if (expectedReturn==null) {
+                            expectedReturn = System.getProperty(HealthChecker.PROP_HEALTHCHECKER_DEF_STATUS, "OK");
+                            returnType = "httpCode200";
+                        }
+
+                        boolean isOk = false;
+                        try {
+                            isOk = tester.withUrl(fullUrl)
+                                         .withHost(host)
+                                         .withHealthCheckPath(healthCheckPath)
+                                         .withReturn(returnType, expectedReturn)
+                                         .connect();
+
+                        } catch (RuntimeException | InterruptedException | ExecutionException e) {
+                            logger.ifPresent(log -> log.debug(e));
+                        }
+
+                        if (isOk) {
+                            ((Backend) backend).setHealth(Health.HEALTHY);
+                        } else {
+                            ((Backend) backend).setHealth(Health.DEADY);
+                        }
+                        if (((Backend) backend).getHealth()!=lastHealth) {
+                            if (isOk) {
+                                logger.ifPresent(log -> log.info(url+" is OK"));
+                            } else {
+                                logger.ifPresent(log -> log.warn(url+" FAIL"));
+                            }
+                            distributedMap.getMap(Backend.class.getName()).put(backend.getId(), backend);
+                        }
                     }
                 });
         }
