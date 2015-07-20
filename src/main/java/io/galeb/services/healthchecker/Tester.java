@@ -16,8 +16,6 @@
 
 package io.galeb.services.healthchecker;
 
-import io.galeb.core.logging.Logger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.CharBuffer;
@@ -40,6 +38,8 @@ import org.apache.http.nio.client.methods.AsyncCharConsumer;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
 import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.protocol.HttpContext;
+
+import io.galeb.core.logging.Logger;
 
 public class Tester {
 
@@ -143,7 +143,8 @@ public class Tester {
                     if (returnType.startsWith("httpCode")) {
                         returnType = returnType.replaceFirst("httpCode", "");
                     }
-                    isOk = statusCode == Integer.parseInt(returnType);
+                    // isOk = statusCode == Integer.parseInt(returnType); // Disable temporarily statusCode check
+                    isOk = true;
                 }
 
                 @Override
