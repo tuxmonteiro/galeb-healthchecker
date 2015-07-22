@@ -16,6 +16,15 @@
 
 package io.galeb.services.healthchecker.sched;
 
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
 import io.galeb.core.cluster.DistributedMap;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
@@ -26,18 +35,9 @@ import io.galeb.core.model.Farm;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.collections.BackendCollection;
 import io.galeb.core.model.collections.BackendPoolCollection;
-import io.galeb.core.sched.QuartzScheduler;
+import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.HealthChecker;
 import io.galeb.services.healthchecker.Tester;
-
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.Job;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 
 @DisallowConcurrentExecution
 public class HealthCheckJob implements Job {
@@ -54,17 +54,17 @@ public class HealthCheckJob implements Job {
         final JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
 
         if (!logger.isPresent()) {
-            logger = Optional.ofNullable((Logger) jobDataMap.get(QuartzScheduler.LOGGER));
+            logger = Optional.ofNullable((Logger) jobDataMap.get(AbstractService.LOGGER));
         }
         if (tester==null) {
             tester = (Tester) jobDataMap.get(HealthChecker.TESTER_NAME);
             tester.setLogger(logger);
         }
         if (farm==null) {
-            farm = (Farm) jobDataMap.get(QuartzScheduler.FARM);
+            farm = (Farm) jobDataMap.get(AbstractService.FARM);
         }
         if (distributedMap==null) {
-            distributedMap = (DistributedMap<String, Entity>) jobDataMap.get(QuartzScheduler.DISTRIBUTEDMAP);
+            distributedMap = (DistributedMap<String, Entity>) jobDataMap.get(AbstractService.DISTRIBUTEDMAP);
         }
 
         logger.ifPresent(log -> log.info("=== " + this.getClass().getSimpleName() + " ==="));

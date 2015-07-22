@@ -19,9 +19,6 @@ package io.galeb.services.healthchecker;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
-import io.galeb.core.sched.QuartzScheduler;
-import io.galeb.core.services.AbstractService;
-import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
 import java.util.UUID;
 
@@ -36,6 +33,9 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
+
+import io.galeb.core.services.AbstractService;
+import io.galeb.services.healthchecker.sched.HealthCheckJob;
 
 public class HealthChecker extends AbstractService implements JobListener {
 
@@ -89,9 +89,9 @@ public class HealthChecker extends AbstractService implements JobListener {
 
                 JobDataMap jobdataMap = new JobDataMap();
                 jobdataMap.put(TESTER_NAME, new Tester());
-                jobdataMap.put(QuartzScheduler.FARM, farm);
-                jobdataMap.put(QuartzScheduler.LOGGER, logger);
-                jobdataMap.put(QuartzScheduler.DISTRIBUTEDMAP, distributedMap);
+                jobdataMap.put(AbstractService.FARM, farm);
+                jobdataMap.put(AbstractService.LOGGER, logger);
+                jobdataMap.put(AbstractService.DISTRIBUTEDMAP, distributedMap);
 
                 JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
                                                                        .setJobData(jobdataMap)
