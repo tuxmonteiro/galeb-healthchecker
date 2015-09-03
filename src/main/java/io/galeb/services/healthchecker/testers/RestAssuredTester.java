@@ -22,23 +22,14 @@ import io.galeb.core.logging.Logger;
 @SuppressWarnings("deprecation")
 public class RestAssuredTester implements TestExecutor {
 
-    private final int defaultTimeout = 2000;
-
     private Optional<Logger> logger = Optional.empty();
-    private HttpClientConfig httpClientConfig;
 
     private String url = null;
     private String host = null;
     private int statusCode = 0;
     private String body = null;
-
-    public RestAssuredTester() {
-        httpClientConfig = httpClientConfig()
-                .setParam(ClientPNames.CONN_MANAGER_TIMEOUT, defaultTimeout)       // HttpConnectionManager connection return time
-                .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, defaultTimeout) // Remote host connection time
-                .setParam(CoreConnectionPNames.SO_TIMEOUT, defaultTimeout)         // Remote host response time
-                .setParam(CoreConnectionPNames.STALE_CONNECTION_CHECK, true);      // Determines whether stale connection check is to be used
-    }
+    private boolean followRedirects = false;
+    private HttpClientConfig httpClientConfig = null;
 
     @Override
     public TestExecutor withUrl(String url) {
@@ -65,6 +56,26 @@ public class RestAssuredTester implements TestExecutor {
     }
 
     @Override
+    public TestExecutor followRedirects(Boolean follow) {
+        if (follow != null) {
+            followRedirects = follow;
+        }
+        return this;
+    }
+
+    @Override
+    public TestExecutor connectTimeOut(Integer timeout) {
+        if (timeout != null) {
+            httpClientConfig = httpClientConfig()
+                    .setParam(ClientPNames.CONN_MANAGER_TIMEOUT, Long.valueOf(timeout))
+                    .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, timeout)
+                    .setParam(CoreConnectionPNames.SO_TIMEOUT, timeout)
+                    .setParam(CoreConnectionPNames.STALE_CONNECTION_CHECK, true);
+        }
+        return this;
+    }
+
+    @Override
     public TestExecutor setLogger(Optional<Logger> logger) {
         this.logger = logger;
         return this;
@@ -76,6 +87,7 @@ public class RestAssuredTester implements TestExecutor {
         host = null;
         statusCode = 0;
         body = null;
+        httpClientConfig = null;
         return this;
     }
 
@@ -83,8 +95,17 @@ public class RestAssuredTester implements TestExecutor {
     public synchronized boolean check() {
         RequestSpecification request;
         ValidatableResponse response;
-        RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(false);
+        RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(followRedirects);
         RestAssuredConfig restAssuredConfig = RestAssuredConfig.config().redirect(redirectConfig);
+
+        if (httpClientConfig == null) {
+            httpClientConfig = httpClientConfig()
+                    .setParam(ClientPNames.CONN_MANAGER_TIMEOUT, 5000L)
+                    .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000)
+                    .setParam(CoreConnectionPNames.SO_TIMEOUT, 5000)
+                    .setParam(CoreConnectionPNames.STALE_CONNECTION_CHECK, true);
+        }
+
         restAssuredConfig.httpClient(httpClientConfig);
 
         request = with().config(restAssuredConfig);

@@ -14,6 +14,14 @@ public interface TestExecutor {
 
     TestExecutor withBody(String body);
 
+    public default TestExecutor connectTimeOut(Integer timeout) {
+        return this;
+    };
+
+    public default TestExecutor followRedirects(Boolean follow) {
+        return this;
+    };
+
     TestExecutor setLogger(Optional<Logger>  logger);
 
     TestExecutor reset();

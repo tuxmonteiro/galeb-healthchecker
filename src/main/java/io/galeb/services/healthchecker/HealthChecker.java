@@ -44,11 +44,15 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     private static final String PROP_HEALTHCHECKER_INTERVAL   = PROP_HEALTHCHECKER_PREFIX+"interval";
 
-    public static final String PROP_HEALTHCHECKER_DEF_PATH   = PROP_HEALTHCHECKER_PREFIX+"defpath";
+    public static final String PROP_HEALTHCHECKER_DEF_PATH    = PROP_HEALTHCHECKER_PREFIX+"defpath";
 
-    public static final String PROP_HEALTHCHECKER_DEF_BODY   = PROP_HEALTHCHECKER_PREFIX+"defBody";
+    public static final String PROP_HEALTHCHECKER_DEF_BODY    = PROP_HEALTHCHECKER_PREFIX+"defBody";
 
-    public static final String PROP_HEALTHCHECKER_DEF_STATUS = PROP_HEALTHCHECKER_PREFIX+"defstatus";
+    public static final String PROP_HEALTHCHECKER_DEF_STATUS  = PROP_HEALTHCHECKER_PREFIX+"defstatus";
+
+    public static final String PROP_HEALTHCHECKER_DEF_TIMEOUT = PROP_HEALTHCHECKER_PREFIX+"defTimeOut";
+
+    public static final String PROP_HEALTHCHECKER_DEF_FOLLOW  = PROP_HEALTHCHECKER_PREFIX+"defFollowRedirects";
 
     public static final String TESTER_NAME = "tester";
 

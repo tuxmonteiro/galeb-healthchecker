@@ -20,6 +20,8 @@ import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_CODE;
 import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_HOST;
 import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_PATH;
 import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_RETURN;
+import static io.galeb.services.healthchecker.HealthChecker.PROP_HEALTHCHECKER_DEF_FOLLOW;
+import static io.galeb.services.healthchecker.HealthChecker.PROP_HEALTHCHECKER_DEF_TIMEOUT;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -138,6 +140,9 @@ public class HealthCheckJob implements Job {
                 .filter(backend -> backend != null && pool.getId().equals(backend.getParentId()))
                 .forEach(backend ->
         {
+            String defaultTimeOut = System.getProperty(PROP_HEALTHCHECKER_DEF_TIMEOUT);
+            String defaultFollowRedirects = System.getProperty(PROP_HEALTHCHECKER_DEF_FOLLOW);
+
             if (backend instanceof Backend) {
                 final String hostWithPort = backend.getId();
                 final Backend.Health lastHealth = ((Backend) backend).getHealth();
@@ -147,6 +152,11 @@ public class HealthCheckJob implements Job {
                                      .withHost(hcHost)
                                      .withStatusCode(statusCode)
                                      .withBody(hcBody)
+                                     .connectTimeOut(defaultTimeOut != null ?
+                                             Integer.parseInt(defaultTimeOut) : null)
+                                     .followRedirects(defaultFollowRedirects != null ?
+                                             Boolean.parseBoolean(defaultFollowRedirects) : null)
+                                     .setLogger(logger)
                                      .check();
                 notifyHealthOnCheck(backend, lastHealth, isOk);
             }
