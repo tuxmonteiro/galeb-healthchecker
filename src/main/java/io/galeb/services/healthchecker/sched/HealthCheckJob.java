@@ -101,7 +101,7 @@ public class HealthCheckJob implements Job {
                 } else {
                     logger.ifPresent(log -> log.warn(hostWithPort+" is FAILED"));
                 }
-                distributedMap.getMap(Backend.class.getName()).put(hostWithPort, backend);
+                distributedMap.getMap(Backend.class.getName()).put(entity.compoundId(), backend);
             }
         }
     }
