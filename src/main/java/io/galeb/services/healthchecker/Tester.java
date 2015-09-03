@@ -40,35 +40,59 @@ import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.protocol.HttpContext;
 
 import io.galeb.core.logging.Logger;
+import io.galeb.services.healthchecker.testers.TestExecutor;
 
-public class Tester {
+public class Tester implements TestExecutor {
 
     private Optional<Logger> logger;
     private String url;
-    private String healthCheckPath;
+    @SuppressWarnings("unused") private String healthCheckPath;
     private String returnType;
     private String expectedReturn;
     private final int defaultTimeout = 5000;
     private boolean isOk = false;
     private String host;
 
-    public void setLogger(Optional<Logger> logger) {
+    @Override
+    public TestExecutor setLogger(Optional<Logger> logger) {
         this.logger = logger;
+        return this;
     }
 
-    public Tester withHost(String host) {
+    @Override
+    public TestExecutor withHost(String host) {
         this.host = host;
         return this;
     }
 
-    public Tester withUrl(String url) {
+    @Override
+    public TestExecutor withUrl(String url) {
         this.url = url;
         return this;
     }
 
-    public Tester withHealthCheckPath(String healthCheckPath) {
-        this.healthCheckPath = healthCheckPath;
+    @Override
+    public TestExecutor withBody(String body) {
         return this;
+    }
+
+    @Override
+    public TestExecutor withStatusCode(int statusCode) {
+        return this;
+    }
+
+    @Override
+    public TestExecutor reset() {
+        return this;
+    }
+
+    @Override
+    public boolean check() {
+        try {
+            return connect();
+        } catch (ExecutionException | RuntimeException | InterruptedException ignore) {
+            return false;
+        }
     }
 
     public Tester withReturn(String returnType, String expectedReturn) {
@@ -78,7 +102,7 @@ public class Tester {
     }
 
     public boolean connect() throws RuntimeException, InterruptedException, ExecutionException {
-        if (url==null||healthCheckPath==null||returnType==null||expectedReturn==null) {
+        if (url==null||returnType==null||expectedReturn==null) {
             return false;
         }
         final CloseableHttpAsyncClient httpclient = HttpAsyncClients.createDefault();
