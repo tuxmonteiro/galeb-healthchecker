@@ -42,7 +42,7 @@ import org.apache.http.protocol.HttpContext;
 import io.galeb.core.logging.Logger;
 import io.galeb.services.healthchecker.testers.TestExecutor;
 
-public class Tester implements TestExecutor {
+public class ApacheHttpClientTester implements TestExecutor {
 
     private Optional<Logger> logger;
     private String url;
@@ -95,7 +95,7 @@ public class Tester implements TestExecutor {
         }
     }
 
-    public Tester withReturn(String returnType, String expectedReturn) {
+    public ApacheHttpClientTester withReturn(String returnType, String expectedReturn) {
         this.returnType = returnType;
         this.expectedReturn = expectedReturn;
         return this;
