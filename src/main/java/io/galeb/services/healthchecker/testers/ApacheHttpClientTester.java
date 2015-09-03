@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.galeb.services.healthchecker;
+package io.galeb.services.healthchecker.testers;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +40,6 @@ import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.protocol.HttpContext;
 
 import io.galeb.core.logging.Logger;
-import io.galeb.services.healthchecker.testers.TestExecutor;
 
 public class ApacheHttpClientTester implements TestExecutor {
 
