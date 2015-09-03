@@ -24,6 +24,7 @@
     <org.apache.commons.commons-lang3.version>3.3.2</org.apache.commons.commons-lang3.version>
     <org.apache.httpcomponents.version>4.0.2</org.apache.httpcomponents.version>
     <org.quartz-scheduler.version>2.2.1</org.quartz-scheduler.version>
+    <com.jayway.restassured.version>2.4.1</com.jayway.restassured.version>
   </properties>
 
   <profiles>
@@ -119,6 +120,16 @@
       <groupId>org.quartz-scheduler</groupId>
       <artifactId>quartz-jobs</artifactId>
       <version>${org.quartz-scheduler.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.restassured</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>${com.jayway.restassured.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.restassured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>${com.jayway.restassured.version}</version>
     </dependency>
   </dependencies>
 

@@ -36,6 +36,7 @@ import org.quartz.impl.StdSchedulerFactory;
 
 import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.sched.HealthCheckJob;
+import io.galeb.services.healthchecker.testers.RestAssuredTester;
 
 public class HealthChecker extends AbstractService implements JobListener {
 
@@ -44,6 +45,8 @@ public class HealthChecker extends AbstractService implements JobListener {
     private static final String PROP_HEALTHCHECKER_INTERVAL   = PROP_HEALTHCHECKER_PREFIX+"interval";
 
     public static final String PROP_HEALTHCHECKER_DEF_PATH   = PROP_HEALTHCHECKER_PREFIX+"defpath";
+
+    public static final String PROP_HEALTHCHECKER_DEF_BODY   = PROP_HEALTHCHECKER_PREFIX+"defBody";
 
     public static final String PROP_HEALTHCHECKER_DEF_STATUS = PROP_HEALTHCHECKER_PREFIX+"defstatus";
 
@@ -88,7 +91,7 @@ public class HealthChecker extends AbstractService implements JobListener {
                                               .build();
 
                 JobDataMap jobdataMap = new JobDataMap();
-                jobdataMap.put(TESTER_NAME, new Tester());
+                jobdataMap.put(TESTER_NAME, new RestAssuredTester());
                 jobdataMap.put(AbstractService.FARM, farm);
                 jobdataMap.put(AbstractService.LOGGER, logger);
                 jobdataMap.put(AbstractService.DISTRIBUTEDMAP, distributedMap);
