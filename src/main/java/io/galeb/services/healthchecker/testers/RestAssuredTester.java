@@ -116,20 +116,27 @@ public class RestAssuredTester implements TestExecutor {
 
         try {
             response = request.get(url).then();
-            if (statusCode > 0) {
+        } catch (Exception e) {
+            logger.ifPresent(log -> log.warn(url+" >>> Backend FAIL ("+e.getMessage()+")"));
+            return false;
+        }
+        if (statusCode > 0) {
+            try {
                 response.statusCode(statusCode);
                 logger.ifPresent(log -> log.debug(url+" > STATUS CODE MATCH ("+statusCode+")"));
-            } else {
+            } catch (AssertionError e) {
                 logger.ifPresent(log -> log.warn(url+" >>> STATUS CODE NOT MATCH ("+statusCode+")"));
+                return false;
             }
-            if (body != null && !"".equals(body)) {
+        }
+        if (body != null && !"".equals(body)) {
+            try {
                 response.body(containsString(body));
                 logger.ifPresent(log -> log.debug(url+" > BODY MATCH ("+body+")"));
-            } else {
+            } catch (AssertionError e) {
                 logger.ifPresent(log -> log.warn(url+" >>> BODY NOT MATCH ("+body+")"));
+                return false;
             }
-        } catch (Exception e) {
-            return false;
         }
 
         return true;
