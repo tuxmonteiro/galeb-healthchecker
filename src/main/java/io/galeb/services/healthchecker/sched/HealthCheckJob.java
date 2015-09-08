@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
@@ -135,6 +136,7 @@ public class HealthCheckJob implements Job {
         final String hcPath = (String) properties.get(PROP_HEALTHCHECK_PATH);
         final String hcHost = (String) properties.get(PROP_HEALTHCHECK_HOST);
         final int statusCode = (int) properties.get(PROP_HEALTHCHECK_CODE);
+        final AtomicBoolean isOk = new AtomicBoolean(false);
 
         farm.getCollection(Backend.class).stream()
                 .filter(backend -> backend != null && pool.getId().equals(backend.getParentId()))
@@ -147,18 +149,23 @@ public class HealthCheckJob implements Job {
                 final String hostWithPort = backend.getId();
                 final Backend.Health lastHealth = ((Backend) backend).getHealth();
                 final String fullPath = hostWithPort+hcPath;
-                boolean isOk = tester.reset()
-                                     .withUrl(fullPath)
-                                     .withHost(hcHost)
-                                     .withStatusCode(statusCode)
-                                     .withBody(hcBody)
-                                     .connectTimeOut(defaultTimeOut != null ?
-                                             Integer.parseInt(defaultTimeOut) : null)
-                                     .followRedirects(defaultFollowRedirects != null ?
-                                             Boolean.parseBoolean(defaultFollowRedirects) : null)
-                                     .setLogger(logger)
-                                     .check();
-                notifyHealthOnCheck(backend, lastHealth, isOk);
+                try {
+                    isOk.set(tester.reset()
+                                   .withUrl(fullPath)
+                                   .withHost(hcHost)
+                                   .withStatusCode(statusCode)
+                                   .withBody(hcBody)
+                                   .connectTimeOut(defaultTimeOut != null ?
+                                         Integer.parseInt(defaultTimeOut) : null)
+                                   .followRedirects(defaultFollowRedirects != null ?
+                                         Boolean.parseBoolean(defaultFollowRedirects) : null)
+                                   .setLogger(logger)
+                                   .check());
+                } catch (Exception e) {
+                    logger.ifPresent(log -> log.error(hostWithPort+": "+e.getMessage()));
+                } finally {
+                    notifyHealthOnCheck(backend, lastHealth, isOk.get());
+                }
             }
         });
     }
