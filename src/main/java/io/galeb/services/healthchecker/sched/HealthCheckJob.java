@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.galeb.core.json.JsonObject;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -54,7 +55,7 @@ public class HealthCheckJob implements Job {
     private TestExecutor tester;
     private Optional<Logger> logger = Optional.empty();
     private Farm farm;
-    private DistributedMap<String, Entity> distributedMap;
+    private DistributedMap<String, String> distributedMap;
 
     @SuppressWarnings("unchecked")
     private void init(final JobDataMap jobDataMap) {
@@ -69,7 +70,7 @@ public class HealthCheckJob implements Job {
             farm = (Farm) jobDataMap.get(AbstractService.FARM);
         }
         if (distributedMap==null) {
-            distributedMap = (DistributedMap<String, Entity>) jobDataMap.get(AbstractService.DISTRIBUTEDMAP);
+            distributedMap = (DistributedMap<String, String>) jobDataMap.get(AbstractService.DISTRIBUTEDMAP);
         }
     }
 
@@ -104,7 +105,7 @@ public class HealthCheckJob implements Job {
                 } else {
                     logger.ifPresent(log -> log.warn(hostWithPort+" is FAILED"));
                 }
-                distributedMap.getMap(Backend.class.getName()).put(entity.compoundId(), backend);
+                distributedMap.getMap(Backend.class.getName()).put(entity.compoundId(), JsonObject.toJsonString(backend));
             }
         }
     }
