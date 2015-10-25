@@ -40,6 +40,8 @@ import io.galeb.services.healthchecker.testers.RestAssuredTester;
 
 public class HealthChecker extends AbstractService implements JobListener {
 
+    public static final String HEALTHCHECKER_USERAGENT        = "Galeb_HealthChecker/1.0";
+
     private static final String PROP_HEALTHCHECKER_PREFIX     = HealthChecker.class.getPackage().getName()+".";
 
     private static final String PROP_HEALTHCHECKER_INTERVAL   = PROP_HEALTHCHECKER_PREFIX+"interval";

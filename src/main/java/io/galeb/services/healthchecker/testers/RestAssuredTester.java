@@ -2,10 +2,12 @@ package io.galeb.services.healthchecker.testers;
 
 import static com.jayway.restassured.RestAssured.with;
 import static com.jayway.restassured.config.HttpClientConfig.httpClientConfig;
+import static io.galeb.services.healthchecker.HealthChecker.HEALTHCHECKER_USERAGENT;
 import static org.hamcrest.Matchers.containsString;
 
 import java.util.Optional;
 
+import io.galeb.services.healthchecker.*;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.params.CoreConnectionPNames;
@@ -113,7 +115,8 @@ public class RestAssuredTester implements TestExecutor {
             Header headerHost = new Header(HttpHeaders.HOST, host);
             request.header(headerHost);
         }
-
+        Header userAgent = new Header(HttpHeaders.USER_AGENT, HEALTHCHECKER_USERAGENT);
+        request.header(userAgent);
         try {
             response = request.get(url).then();
         } catch (Exception e) {

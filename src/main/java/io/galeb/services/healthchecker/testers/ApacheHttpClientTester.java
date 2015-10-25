@@ -23,11 +23,9 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import javax.ws.rs.core.HttpHeaders;
-
+import io.galeb.services.healthchecker.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpException;
-import org.apache.http.HttpResponse;
+import org.apache.http.*;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.concurrent.FutureCallback;
@@ -40,6 +38,8 @@ import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.protocol.HttpContext;
 
 import io.galeb.core.logging.Logger;
+
+import static io.galeb.services.healthchecker.HealthChecker.HEALTHCHECKER_USERAGENT;
 
 public class ApacheHttpClientTester implements TestExecutor {
 
@@ -116,6 +116,7 @@ public class ApacheHttpClientTester implements TestExecutor {
                     .setConnectTimeout(defaultTimeout)
                     .setConnectionRequestTimeout(defaultTimeout)
                     .build();
+            request.setHeader(HttpHeaders.USER_AGENT, HEALTHCHECKER_USERAGENT);
             request.setConfig(requestConfig);
             final AsyncCharConsumer<HttpResponse> consumer = new AsyncCharConsumer<HttpResponse>() {
 
