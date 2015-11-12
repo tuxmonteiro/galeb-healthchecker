@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2014-2015 Globo.com - ATeam
+ * All rights reserved.
+ *
+ * This source is subject to the Apache License, Version 2.0.
+ * Please see the LICENSE file for more information.
+ *
+ * Authors: See AUTHORS file
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.galeb.services.healthchecker.testers;
 
 import static com.jayway.restassured.RestAssured.with;
@@ -8,7 +24,12 @@ import static org.hamcrest.Matchers.containsString;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import com.jayway.restassured.response.Header;
 import com.jayway.restassured.response.ValidatableResponse;
