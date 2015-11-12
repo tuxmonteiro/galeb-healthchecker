@@ -52,9 +52,9 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     public static final String PROP_HEALTHCHECKER_DEF_STATUS  = PROP_HEALTHCHECKER_PREFIX+"defstatus";
 
-    public static final String PROP_HEALTHCHECKER_DEF_TIMEOUT = PROP_HEALTHCHECKER_PREFIX+"defTimeOut";
+    public static final String PROP_HEALTHCHECKER_CONN_TIMEOUT = PROP_HEALTHCHECKER_PREFIX+"connectionTimeout";
 
-    public static final String PROP_HEALTHCHECKER_DEF_FOLLOW  = PROP_HEALTHCHECKER_PREFIX+"defFollowRedirects";
+    public static final String PROP_HEALTHCHECKER_FOLLOW_REDIR = PROP_HEALTHCHECKER_PREFIX+"followRedirects";
 
     public static final String TESTER_NAME = "tester";
 
