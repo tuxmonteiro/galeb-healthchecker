@@ -183,6 +183,7 @@
             <argument>-Xmx1024m</argument>
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
             <argument>-Dhazelcast.config=hazelcast.xml</argument>
+            <argument>-Dio.galeb.services.healthchecker.defTimeOut=15000</argument>
             <argument>-jar</argument>
             <argument>target/galeb-healthchecker-${project.version}-uber.jar</argument>
           </arguments>
