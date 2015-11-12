@@ -14,7 +14,7 @@ public interface TestExecutor {
 
     TestExecutor withBody(String body);
 
-    public default TestExecutor connectTimeOut(Integer timeout) {
+    public default TestExecutor setConnectionTimeOut(Integer timeout) {
         return this;
     };
 

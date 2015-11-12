@@ -5,9 +5,14 @@ import static com.jayway.restassured.config.HttpClientConfig.httpClientConfig;
 import static io.galeb.services.healthchecker.HealthChecker.HEALTHCHECKER_USERAGENT;
 import static org.hamcrest.Matchers.containsString;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.*;
 
-import io.galeb.services.healthchecker.*;
+import com.jayway.restassured.response.Header;
+import com.jayway.restassured.response.ValidatableResponse;
+import com.jayway.restassured.specification.RequestSpecification;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.params.CoreConnectionPNames;
@@ -15,13 +20,9 @@ import org.apache.http.params.CoreConnectionPNames;
 import com.jayway.restassured.config.HttpClientConfig;
 import com.jayway.restassured.config.RedirectConfig;
 import com.jayway.restassured.config.RestAssuredConfig;
-import com.jayway.restassured.response.Header;
-import com.jayway.restassured.response.ValidatableResponse;
-import com.jayway.restassured.specification.RequestSpecification;
 
 import io.galeb.core.logging.Logger;
 
-@SuppressWarnings("deprecation")
 public class RestAssuredTester implements TestExecutor {
 
     private Optional<Logger> logger = Optional.empty();
@@ -32,6 +33,7 @@ public class RestAssuredTester implements TestExecutor {
     private String body = null;
     private boolean followRedirects = false;
     private HttpClientConfig httpClientConfig = null;
+    private int connectionTimeout = 5000;
 
     @Override
     public TestExecutor withUrl(String url) {
@@ -66,13 +68,16 @@ public class RestAssuredTester implements TestExecutor {
     }
 
     @Override
-    public TestExecutor connectTimeOut(Integer timeout) {
+    public TestExecutor setConnectionTimeOut(Integer timeout) {
         if (timeout != null) {
-            httpClientConfig = httpClientConfig()
-                    .setParam(ClientPNames.CONN_MANAGER_TIMEOUT, Long.valueOf(timeout))
-                    .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, timeout)
-                    .setParam(CoreConnectionPNames.SO_TIMEOUT, timeout)
-                    .setParam(CoreConnectionPNames.STALE_CONNECTION_CHECK, true);
+            connectionTimeout = timeout;
+            final Map<String, Object> conf = new HashMap<>();
+            conf.put(ClientPNames.CONN_MANAGER_TIMEOUT, Long.valueOf(timeout));
+            conf.put(CoreConnectionPNames.CONNECTION_TIMEOUT, timeout);
+            conf.put(CoreConnectionPNames.SO_TIMEOUT, timeout);
+            conf.put(CoreConnectionPNames.STALE_CONNECTION_CHECK, true);
+            conf.put("CONNECTION_MANAGER_TIMEOUT", timeout);
+            httpClientConfig = httpClientConfig().withParams(conf);
         }
         return this;
     }
@@ -96,16 +101,12 @@ public class RestAssuredTester implements TestExecutor {
     @Override
     public synchronized boolean check() {
         RequestSpecification request;
-        ValidatableResponse response;
+        ValidatableResponse response = null;
         RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(followRedirects);
         RestAssuredConfig restAssuredConfig = RestAssuredConfig.config().redirect(redirectConfig);
 
         if (httpClientConfig == null) {
-            httpClientConfig = httpClientConfig()
-                    .setParam(ClientPNames.CONN_MANAGER_TIMEOUT, 5000L)
-                    .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000)
-                    .setParam(CoreConnectionPNames.SO_TIMEOUT, 5000)
-                    .setParam(CoreConnectionPNames.STALE_CONNECTION_CHECK, true);
+            setConnectionTimeOut(connectionTimeout);
         }
 
         restAssuredConfig.httpClient(httpClientConfig);
@@ -117,10 +118,36 @@ public class RestAssuredTester implements TestExecutor {
         }
         Header userAgent = new Header(HttpHeaders.USER_AGENT, HEALTHCHECKER_USERAGENT);
         request.header(userAgent);
+
+        final ExecutorService executor = Executors.newWorkStealingPool(1);
+        Future<ValidatableResponse> future = null;
+
         try {
-            response = request.get(url).then();
+            future = executor.submit(new Task(request, url));
+        } catch (RejectedExecutionException e) {
+            logger.ifPresent(log -> log.debug(e));
+        }
+
+        try {
+            if (future != null) {
+                response = future.get(connectionTimeout, TimeUnit.MILLISECONDS);
+            } else {
+                logger.ifPresent(log -> log.warn(url+" >>> NOT RUN - Task problem"));
+            }
         } catch (Exception e) {
-            logger.ifPresent(log -> log.warn(url+" >>> Backend FAIL ("+e.getMessage()+")"));
+            if (future != null) {
+                future.cancel(true);
+            }
+            String tempMessage = e.getMessage();
+            if (tempMessage == null) {
+                tempMessage = "Connection Timeout ("+connectionTimeout+" ms)";
+            }
+            final String message = tempMessage;
+            logger.ifPresent(log -> log.warn(url+" >>> Backend FAIL ("+message+")"));
+        } finally {
+            executor.shutdownNow();
+        }
+        if (response == null) {
             return false;
         }
         if (statusCode > 0) {
@@ -143,6 +170,22 @@ public class RestAssuredTester implements TestExecutor {
         }
 
         return true;
+    }
+
+    class Task implements Callable<ValidatableResponse> {
+
+        private final RequestSpecification request;
+        private final String url;
+
+        public Task(final RequestSpecification request, String url) {
+            this.request = request;
+            this.url = url;
+        }
+
+        @Override
+        public ValidatableResponse call() throws Exception {
+            return request.get(url).then();
+        }
     }
 
 }
