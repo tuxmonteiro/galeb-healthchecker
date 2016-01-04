@@ -20,8 +20,8 @@ import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_CODE;
 import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_HOST;
 import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_PATH;
 import static io.galeb.core.model.BackendPool.PROP_HEALTHCHECK_RETURN;
-import static io.galeb.services.healthchecker.HealthChecker.PROP_HEALTHCHECKER_DEF_FOLLOW;
-import static io.galeb.services.healthchecker.HealthChecker.PROP_HEALTHCHECKER_DEF_TIMEOUT;
+import static io.galeb.services.healthchecker.HealthChecker.PROP_HEALTHCHECKER_FOLLOW_REDIR;
+import static io.galeb.services.healthchecker.HealthChecker.PROP_HEALTHCHECKER_CONN_TIMEOUT;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -139,12 +139,12 @@ public class HealthCheckJob implements Job {
         final int statusCode = (int) properties.get(PROP_HEALTHCHECK_CODE);
         final AtomicBoolean isOk = new AtomicBoolean(false);
 
-        farm.getCollection(Backend.class).stream()
+        farm.getCollection(Backend.class).parallelStream()
                 .filter(backend -> backend != null && pool.getId().equals(backend.getParentId()))
                 .forEach(backend ->
         {
-            String defaultTimeOut = System.getProperty(PROP_HEALTHCHECKER_DEF_TIMEOUT);
-            String defaultFollowRedirects = System.getProperty(PROP_HEALTHCHECKER_DEF_FOLLOW);
+            String connTimeOut = System.getProperty(PROP_HEALTHCHECKER_CONN_TIMEOUT);
+            String followRedirects = System.getProperty(PROP_HEALTHCHECKER_FOLLOW_REDIR);
 
             if (backend instanceof Backend) {
                 final String hostWithPort = backend.getId();
@@ -156,14 +156,15 @@ public class HealthCheckJob implements Job {
                                    .withHost(hcHost)
                                    .withStatusCode(statusCode)
                                    .withBody(hcBody)
-                                   .connectTimeOut(defaultTimeOut != null ?
-                                         Integer.parseInt(defaultTimeOut) : null)
-                                   .followRedirects(defaultFollowRedirects != null ?
-                                         Boolean.parseBoolean(defaultFollowRedirects) : null)
+                                   .setConnectionTimeOut(connTimeOut != null ?
+                                         Integer.parseInt(connTimeOut) : null)
+                                   .followRedirects(followRedirects != null ?
+                                         Boolean.parseBoolean(followRedirects) : null)
                                    .setLogger(logger)
                                    .check());
                 } catch (Exception e) {
                     logger.ifPresent(log -> log.error(hostWithPort+": "+e.getMessage()));
+                    e.printStackTrace();
                 } finally {
                     notifyHealthOnCheck(backend, lastHealth, isOk.get());
                 }

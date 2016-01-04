@@ -3,7 +3,7 @@
 
   <groupId>io.galeb</groupId>
   <artifactId>galeb-healthchecker</artifactId>
-  <version>3.1.5-SNAPSHOT</version>
+  <version>3.1.11-SNAPSHOT</version>
 
   <licenses>
     <license>
@@ -182,6 +182,8 @@
             <argument>-Xms1024m</argument>
             <argument>-Xmx1024m</argument>
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
+            <argument>-Dio.galeb.services.healthchecker.connectionTimeout=15000</argument>
+            <argument>-Dio.galeb.services.healthchecker.followRedirects=false</argument>
             <argument>-jar</argument>
             <argument>target/galeb-healthchecker-${project.version}-uber.jar</argument>
           </arguments>
