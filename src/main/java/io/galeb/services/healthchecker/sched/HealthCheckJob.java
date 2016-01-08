@@ -28,7 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.*;
 
+import io.galeb.core.jcache.*;
 import io.galeb.core.json.JsonObject;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
@@ -36,26 +38,25 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
-import io.galeb.core.cluster.DistributedMap;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.Backend.Health;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
-import io.galeb.core.model.Farm;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.HealthChecker;
 import io.galeb.services.healthchecker.testers.TestExecutor;
 
+import javax.cache.Cache;
+
 @DisallowConcurrentExecution
 public class HealthCheckJob implements Job {
 
     private TestExecutor tester;
     private Optional<Logger> logger = Optional.empty();
-    private Farm farm;
-    private DistributedMap<String, String> distributedMap;
+    private CacheFactory cacheFactory;
 
     @SuppressWarnings("unchecked")
     private void init(final JobDataMap jobDataMap) {
@@ -66,11 +67,8 @@ public class HealthCheckJob implements Job {
             tester = (TestExecutor) jobDataMap.get(HealthChecker.TESTER_NAME);
             tester.setLogger(logger);
         }
-        if (farm==null) {
-            farm = (Farm) jobDataMap.get(AbstractService.FARM);
-        }
-        if (distributedMap==null) {
-            distributedMap = (DistributedMap<String, String>) jobDataMap.get(AbstractService.DISTRIBUTEDMAP);
+        if (cacheFactory==null) {
+            cacheFactory = (CacheFactory) jobDataMap.get(AbstractService.CACHEFACTORY);
         }
     }
 
@@ -81,9 +79,17 @@ public class HealthCheckJob implements Job {
 
         logger.ifPresent(log -> log.info("=== " + this.getClass().getSimpleName() + " ==="));
 
-        final BackendPoolCollection backendPoolCollection = (BackendPoolCollection) farm.getCollection(BackendPool.class);
-        backendPoolCollection.stream().forEach(pool -> {
-            checkBackendPool(pool, getProperties(pool));
+        Cache<String, String> pools = cacheFactory.getCache(BackendPool.class.getName());
+        Cache<String, String> backends = cacheFactory.getCache(Backend.class.getName());
+        Stream<Cache.Entry<String, String>> streamOfBackendPools = StreamSupport.stream(pools.spliterator(), true);
+
+        streamOfBackendPools.parallel().forEach(entry -> {
+            BackendPool backendPool = (BackendPool) JsonObject.fromJson(entry.getValue(), BackendPool.class);
+            Stream<Cache.Entry<String, String>> streamOfBackends = StreamSupport.stream(backends.spliterator(), false);
+            streamOfBackends.map(entry2 -> (Backend) JsonObject.fromJson(entry2.getValue(), Backend.class))
+                    .filter(b -> b.getParentId().equals(backendPool.getId()))
+                    .forEach(backendPool::addBackend);
+            checkBackendPool(backendPool, getProperties(backendPool));
         });
 
         logger.ifPresent(log -> log.debug("Job HealthCheck done."));
@@ -105,7 +111,8 @@ public class HealthCheckJob implements Job {
                 } else {
                     logger.ifPresent(log -> log.warn(hostWithPort+" is FAILED"));
                 }
-                distributedMap.getMap(Backend.class.getName()).put(entity.compoundId(), JsonObject.toJsonString(backend));
+                Cache<String, String> cache = cacheFactory.getCache(Backend.class.getName());
+                cache.replace(entity.compoundId(), JsonObject.toJsonString(backend));
             }
         }
     }
@@ -131,7 +138,7 @@ public class HealthCheckJob implements Job {
         return Collections.unmodifiableMap(properties);
     }
 
-    private void checkBackendPool(final Entity pool, final Map<String, Object> properties) {
+    private void checkBackendPool(final BackendPool pool, final Map<String, Object> properties) {
 
         final String hcBody = (String) properties.get(PROP_HEALTHCHECK_RETURN);
         final String hcPath = (String) properties.get(PROP_HEALTHCHECK_PATH);
@@ -139,16 +146,14 @@ public class HealthCheckJob implements Job {
         final int statusCode = (int) properties.get(PROP_HEALTHCHECK_CODE);
         final AtomicBoolean isOk = new AtomicBoolean(false);
 
-        farm.getCollection(Backend.class).parallelStream()
-                .filter(backend -> backend != null && pool.getId().equals(backend.getParentId()))
-                .forEach(backend ->
+        pool.getBackends().parallelStream().forEach(backend ->
         {
             String connTimeOut = System.getProperty(PROP_HEALTHCHECKER_CONN_TIMEOUT);
             String followRedirects = System.getProperty(PROP_HEALTHCHECKER_FOLLOW_REDIR);
 
-            if (backend instanceof Backend) {
+            if (backend != null) {
                 final String hostWithPort = backend.getId();
-                final Backend.Health lastHealth = ((Backend) backend).getHealth();
+                final Backend.Health lastHealth = backend.getHealth();
                 final String fullPath = hostWithPort+hcPath;
                 try {
                     isOk.set(tester.reset()
@@ -173,9 +178,13 @@ public class HealthCheckJob implements Job {
     }
 
     private String getHost(Entity pool) {
-        Optional<Entity> rule = farm.getCollection(Rule.class).stream()
+        Cache<String, String> rules = cacheFactory.getCache(Rule.class.getName());
+        Stream<Cache.Entry<String, String>> streamOfRules = StreamSupport.stream(rules.spliterator(), false);
+
+        Optional<Rule> rule = streamOfRules.map(entry -> (Rule) JsonObject.fromJson(entry.getValue(), Rule.class))
                 .filter(r -> pool.getId().equalsIgnoreCase((String) r.getProperty(Rule.PROP_TARGET_ID)))
                 .findAny();
+
         return rule.isPresent() ? rule.get().getParentId() : "";
     }
 
