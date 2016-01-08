@@ -100,7 +100,7 @@ public class HealthChecker extends AbstractService implements JobListener {
                 jobdataMap.put(TESTER_NAME, new RestAssuredTester());
                 jobdataMap.put(AbstractService.FARM, farm);
                 jobdataMap.put(AbstractService.LOGGER, logger);
-                jobdataMap.put(AbstractService.DISTRIBUTEDMAP, distributedMap);
+                jobdataMap.put(AbstractService.CACHEFACTORY, cacheFactory);
 
                 JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
                                                                        .setJobData(jobdataMap)

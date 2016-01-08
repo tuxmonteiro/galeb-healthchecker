@@ -3,7 +3,7 @@
 
   <groupId>io.galeb</groupId>
   <artifactId>galeb-healthchecker</artifactId>
-  <version>3.1.11-SNAPSHOT</version>
+  <version>3.1.11.3-SNAPSHOT</version>
 
   <licenses>
     <license>
@@ -57,11 +57,6 @@
     <dependency>
       <groupId>io.galeb</groupId>
       <artifactId>galeb-undertow</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.galeb</groupId>
-      <artifactId>galeb-hazelcast</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
