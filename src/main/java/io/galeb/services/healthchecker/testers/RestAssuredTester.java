@@ -34,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import com.jayway.restassured.response.Header;
 import com.jayway.restassured.response.ValidatableResponse;
 import com.jayway.restassured.specification.RequestSpecification;
+import io.galeb.core.model.*;
+import io.galeb.services.healthchecker.sched.*;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.params.CoreConnectionPNames;
@@ -55,6 +57,25 @@ public class RestAssuredTester implements TestExecutor {
     private boolean followRedirects = false;
     private HttpClientConfig httpClientConfig = null;
     private int connectionTimeout = 5000;
+    private Optional<HealthCheckJob> job = Optional.empty();
+    private Entity entity = null;
+
+    @Override
+    public Entity getEntity() {
+        return entity;
+    }
+
+    @Override
+    public TestExecutor setEntity(Entity entity) {
+        this.entity = entity;
+        return this;
+    }
+
+    @Override
+    public TestExecutor withJob(HealthCheckJob healthCheckJob) {
+        this.job = Optional.of(healthCheckJob);
+        return this;
+    }
 
     @Override
     public TestExecutor withUrl(String url) {
@@ -120,7 +141,7 @@ public class RestAssuredTester implements TestExecutor {
     }
 
     @Override
-    public synchronized boolean check() {
+    public boolean check() {
         RequestSpecification request;
         ValidatableResponse response = null;
         RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(followRedirects);
@@ -169,6 +190,7 @@ public class RestAssuredTester implements TestExecutor {
             executor.shutdownNow();
         }
         if (response == null) {
+            job.ifPresent(aJob -> aJob.done(this));
             return false;
         }
         if (statusCode > 0) {
@@ -177,6 +199,7 @@ public class RestAssuredTester implements TestExecutor {
                 logger.ifPresent(log -> log.debug(url+" > STATUS CODE MATCH ("+statusCode+")"));
             } catch (AssertionError e) {
                 logger.ifPresent(log -> log.warn(url+" >>> STATUS CODE NOT MATCH ("+statusCode+")"));
+                job.ifPresent(aJob -> aJob.done(this));
                 return false;
             }
         }
@@ -186,10 +209,11 @@ public class RestAssuredTester implements TestExecutor {
                 logger.ifPresent(log -> log.debug(url+" > BODY MATCH ("+body+")"));
             } catch (AssertionError e) {
                 logger.ifPresent(log -> log.warn(url+" >>> BODY NOT MATCH ("+body+")"));
+                job.ifPresent(aJob -> aJob.done(this));
                 return false;
             }
         }
-
+        job.ifPresent(aJob -> aJob.done(this));
         return true;
     }
 

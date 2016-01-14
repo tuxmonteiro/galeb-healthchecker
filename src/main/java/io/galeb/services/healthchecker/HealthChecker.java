@@ -56,6 +56,8 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     public static final String PROP_HEALTHCHECKER_FOLLOW_REDIR = PROP_HEALTHCHECKER_PREFIX+"followRedirects";
 
+    public static final String PROP_HEALTHCHECKER_THREADS      = PROP_HEALTHCHECKER_PREFIX+"threads";
+
     public static final String TESTER_NAME = "tester";
 
     private Scheduler scheduler;
@@ -97,7 +99,6 @@ public class HealthChecker extends AbstractService implements JobListener {
                                               .build();
 
                 JobDataMap jobdataMap = new JobDataMap();
-                jobdataMap.put(TESTER_NAME, new RestAssuredTester());
                 jobdataMap.put(AbstractService.FARM, farm);
                 jobdataMap.put(AbstractService.LOGGER, logger);
                 jobdataMap.put(AbstractService.CACHEFACTORY, cacheFactory);

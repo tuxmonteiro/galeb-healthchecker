@@ -102,11 +102,6 @@
       <version>${org.apache.logging.log4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-      <version>${org.apache.httpcomponents.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.quartz-scheduler</groupId>
       <artifactId>quartz</artifactId>
       <version>${org.quartz-scheduler.version}</version>
@@ -195,6 +190,7 @@
           <instrumentation>
             <ignoreTrivial>true</ignoreTrivial>
           </instrumentation>
+          <check/>
         </configuration>
       </plugin>
     </plugins>
@@ -231,6 +227,7 @@
                 <formats>
                     <format>xml</format>
                 </formats>
+              <check/>
             </configuration>
         </plugin>
     </plugins>
