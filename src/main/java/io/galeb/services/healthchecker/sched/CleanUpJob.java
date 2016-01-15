@@ -36,7 +36,7 @@ public class CleanUpJob implements Job {
 
     private Map<String, Future> futureMap;
 
-    private Optional<Logger> logger;
+    private Optional<Logger> logger = Optional.empty();
 
     @SuppressWarnings("unchecked")
     public void init(JobDataMap jobDataMap) {
