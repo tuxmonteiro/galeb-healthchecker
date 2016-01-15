@@ -3,14 +3,11 @@ package io.galeb.services.healthchecker.testers;
 import java.util.Optional;
 
 import io.galeb.core.logging.Logger;
-import io.galeb.core.model.*;
-import io.galeb.services.healthchecker.sched.*;
+import io.galeb.core.model.Entity;
+
+import javax.cache.Cache;
 
 public interface TestExecutor {
-
-    default TestExecutor withJob(HealthCheckJob healthCheckJob) {
-        return this;
-    }
 
     TestExecutor withUrl(String fullPath);
 
@@ -20,22 +17,22 @@ public interface TestExecutor {
 
     TestExecutor withBody(String body);
 
-    public default TestExecutor setConnectionTimeOut(Integer timeout) {
+    default TestExecutor setConnectionTimeOut(Integer timeout) {
         return this;
     };
 
-    public default TestExecutor followRedirects(Boolean follow) {
+    default TestExecutor followRedirects(Boolean follow) {
         return this;
     };
 
-    TestExecutor setLogger(Optional<Logger>  logger);
+    default TestExecutor setLogger(Optional<Logger>  logger) { return this; }
 
-    TestExecutor reset();
+    default TestExecutor reset() { return this; }
 
-    boolean check();
+    void check();
 
-    TestExecutor setEntity(Entity entity);
+    default TestExecutor setEntity(Entity entity) { return this; }
 
-    Entity getEntity();
+    default TestExecutor setCache(Cache<String, String> cache) { return this; }
 
 }

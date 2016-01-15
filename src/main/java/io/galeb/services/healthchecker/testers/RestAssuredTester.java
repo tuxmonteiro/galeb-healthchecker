@@ -34,8 +34,9 @@ import java.util.concurrent.TimeUnit;
 import com.jayway.restassured.response.Header;
 import com.jayway.restassured.response.ValidatableResponse;
 import com.jayway.restassured.specification.RequestSpecification;
-import io.galeb.core.model.*;
-import io.galeb.services.healthchecker.sched.*;
+import io.galeb.core.json.JsonObject;
+import io.galeb.core.model.Backend;
+import io.galeb.core.model.Entity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.params.CoreConnectionPNames;
@@ -45,6 +46,8 @@ import com.jayway.restassured.config.RedirectConfig;
 import com.jayway.restassured.config.RestAssuredConfig;
 
 import io.galeb.core.logging.Logger;
+
+import javax.cache.Cache;
 
 public class RestAssuredTester implements TestExecutor {
 
@@ -57,23 +60,18 @@ public class RestAssuredTester implements TestExecutor {
     private boolean followRedirects = false;
     private HttpClientConfig httpClientConfig = null;
     private int connectionTimeout = 5000;
-    private Optional<HealthCheckJob> job = Optional.empty();
     private Entity entity = null;
+    private Cache<String, String> cache;
 
     @Override
-    public Entity getEntity() {
-        return entity;
+    public TestExecutor setCache(final Cache<String, String> cache) {
+        this.cache = cache;
+        return this;
     }
 
     @Override
     public TestExecutor setEntity(Entity entity) {
         this.entity = entity;
-        return this;
-    }
-
-    @Override
-    public TestExecutor withJob(HealthCheckJob healthCheckJob) {
-        this.job = Optional.of(healthCheckJob);
         return this;
     }
 
@@ -141,7 +139,7 @@ public class RestAssuredTester implements TestExecutor {
     }
 
     @Override
-    public boolean check() {
+    public void check() {
         RequestSpecification request;
         ValidatableResponse response = null;
         RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(followRedirects);
@@ -190,8 +188,8 @@ public class RestAssuredTester implements TestExecutor {
             executor.shutdownNow();
         }
         if (response == null) {
-            job.ifPresent(aJob -> aJob.done(this));
-            return false;
+            notifyHealthOnCheck(false);
+            return;
         }
         if (statusCode > 0) {
             try {
@@ -199,8 +197,8 @@ public class RestAssuredTester implements TestExecutor {
                 logger.ifPresent(log -> log.debug(url+" > STATUS CODE MATCH ("+statusCode+")"));
             } catch (AssertionError e) {
                 logger.ifPresent(log -> log.warn(url+" >>> STATUS CODE NOT MATCH ("+statusCode+")"));
-                job.ifPresent(aJob -> aJob.done(this));
-                return false;
+                notifyHealthOnCheck(false);
+                return;
             }
         }
         if (body != null && !"".equals(body)) {
@@ -209,12 +207,11 @@ public class RestAssuredTester implements TestExecutor {
                 logger.ifPresent(log -> log.debug(url+" > BODY MATCH ("+body+")"));
             } catch (AssertionError e) {
                 logger.ifPresent(log -> log.warn(url+" >>> BODY NOT MATCH ("+body+")"));
-                job.ifPresent(aJob -> aJob.done(this));
-                return false;
+                notifyHealthOnCheck(false);
+                return;
             }
         }
-        job.ifPresent(aJob -> aJob.done(this));
-        return true;
+        notifyHealthOnCheck(true);
     }
 
     class Task implements Callable<ValidatableResponse> {
@@ -230,6 +227,31 @@ public class RestAssuredTester implements TestExecutor {
         @Override
         public ValidatableResponse call() throws Exception {
             return request.get(url).then();
+        }
+    }
+
+    private void notifyHealthOnCheck(boolean isOk) {
+        if (entity instanceof Backend) {
+            Backend backend = (Backend)entity;
+            Backend.Health lastHealth = backend.getHealth();
+            logger.ifPresent(log -> log.debug("Last Health " + entity.compoundId() + " is "+ lastHealth.toString()));
+            if (isOk) {
+                backend.setHealth(Backend.Health.HEALTHY);
+            } else {
+                backend.setHealth(Backend.Health.DEADY);
+            }
+            if (backend.getHealth()!=lastHealth) {
+                logger.ifPresent(log -> log.debug("New Health " + entity.compoundId() + " is "+ backend.getHealth().toString()));
+                String hostWithPort = backend.getId();
+                if (isOk) {
+                    logger.ifPresent(log -> log.info(hostWithPort+" is OK"));
+                } else {
+                    logger.ifPresent(log -> log.warn(hostWithPort+" is FAILED"));
+                }
+                cache.replace(entity.compoundId(), JsonObject.toJsonString(backend));
+            }
+        } else {
+            logger.ifPresent(log -> log.warn("Entity is NOT Backend"));
         }
     }
 

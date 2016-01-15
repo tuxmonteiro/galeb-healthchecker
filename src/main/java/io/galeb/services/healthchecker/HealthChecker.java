@@ -20,10 +20,12 @@ import static org.quartz.JobBuilder.newJob;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.*;
 
 import javax.annotation.PostConstruct;
 
+import io.galeb.services.healthchecker.sched.*;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -35,8 +37,6 @@ import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 
 import io.galeb.core.services.AbstractService;
-import io.galeb.services.healthchecker.sched.HealthCheckJob;
-import io.galeb.services.healthchecker.testers.RestAssuredTester;
 
 public class HealthChecker extends AbstractService implements JobListener {
 
@@ -44,7 +44,7 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     private static final String PROP_HEALTHCHECKER_PREFIX     = HealthChecker.class.getPackage().getName()+".";
 
-    private static final String PROP_HEALTHCHECKER_INTERVAL   = PROP_HEALTHCHECKER_PREFIX+"interval";
+    public static final String PROP_HEALTHCHECKER_INTERVAL   = PROP_HEALTHCHECKER_PREFIX+"interval";
 
     public static final String PROP_HEALTHCHECKER_DEF_PATH    = PROP_HEALTHCHECKER_PREFIX+"defpath";
 
@@ -52,27 +52,23 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     public static final String PROP_HEALTHCHECKER_DEF_STATUS  = PROP_HEALTHCHECKER_PREFIX+"defstatus";
 
-    public static final String PROP_HEALTHCHECKER_CONN_TIMEOUT = PROP_HEALTHCHECKER_PREFIX+"connectionTimeout";
-
     public static final String PROP_HEALTHCHECKER_FOLLOW_REDIR = PROP_HEALTHCHECKER_PREFIX+"followRedirects";
 
     public static final String PROP_HEALTHCHECKER_THREADS      = PROP_HEALTHCHECKER_PREFIX+"threads";
+
+    public static final String FUTURE_MAP = "futureMap";
 
     public static final String TESTER_NAME = "tester";
 
     private Scheduler scheduler;
 
-    static {
-        if (System.getProperty(PROP_HEALTHCHECKER_INTERVAL)==null) {
-            System.setProperty(PROP_HEALTHCHECKER_INTERVAL, "10");
-        }
-    }
+    private final Map<String, Future> futureMap = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
         super.prelaunch();
         setupScheduler();
-        startHealthCheckJob();
+        startJobs();
 
         logger.debug(String.format("%s ready", toString()));
     }
@@ -88,32 +84,53 @@ public class HealthChecker extends AbstractService implements JobListener {
         }
     }
 
-    private void startHealthCheckJob() {
+    private void startJobs() {
         try {
             if (scheduler.isStarted()) {
 
-                int interval = Integer.parseInt(System.getProperty(PROP_HEALTHCHECKER_INTERVAL));
-                Trigger trigger = newTrigger().withIdentity(UUID.randomUUID().toString())
-                                              .startNow()
-                                              .withSchedule(simpleSchedule().withIntervalInSeconds(interval).repeatForever())
-                                              .build();
-
-                JobDataMap jobdataMap = new JobDataMap();
-                jobdataMap.put(AbstractService.FARM, farm);
-                jobdataMap.put(AbstractService.LOGGER, logger);
-                jobdataMap.put(AbstractService.CACHEFACTORY, cacheFactory);
-
-                JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
-                                                                       .setJobData(jobdataMap)
-                                                                       .build();
-
-
-                scheduler.scheduleJob(healthCheckJob, trigger);
-
+                int interval = Integer.parseInt(System.getProperty(PROP_HEALTHCHECKER_INTERVAL, "10000"));
+                startHealthCheck(interval);
+                startCleanUp(interval);
             }
         } catch (SchedulerException e) {
             logger.error(e);
         }
+    }
+
+    private void startCleanUp(int interval) throws SchedulerException {
+        Trigger triggerCleanup = newTrigger().withIdentity(UUID.randomUUID().toString())
+                .startNow()
+                .withSchedule(simpleSchedule().withIntervalInMilliseconds(interval).repeatForever())
+                .build();
+
+        JobDataMap cleanUpMap = new JobDataMap();
+        cleanUpMap.put(AbstractService.LOGGER, logger);
+        cleanUpMap.put(FUTURE_MAP, futureMap);
+
+        JobDetail cleanUpJob = newJob(CleanUpJob.class).withIdentity(CleanUpJob.class.getName())
+                .setJobData(cleanUpMap)
+                .build();
+
+        scheduler.scheduleJob(cleanUpJob, triggerCleanup);
+    }
+
+    private void startHealthCheck(int interval) throws SchedulerException {
+        Trigger triggerHealthCheck = newTrigger().withIdentity(UUID.randomUUID().toString())
+                                      .startNow()
+                                      .withSchedule(simpleSchedule().withIntervalInMilliseconds(interval).repeatForever())
+                                      .build();
+
+        JobDataMap jobdataMap = new JobDataMap();
+        jobdataMap.put(AbstractService.FARM, farm);
+        jobdataMap.put(AbstractService.LOGGER, logger);
+        jobdataMap.put(AbstractService.CACHEFACTORY, cacheFactory);
+        jobdataMap.put(FUTURE_MAP, futureMap);
+
+        JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
+                                                               .setJobData(jobdataMap)
+                                                               .build();
+
+        scheduler.scheduleJob(healthCheckJob, triggerHealthCheck);
     }
 
     @Override
