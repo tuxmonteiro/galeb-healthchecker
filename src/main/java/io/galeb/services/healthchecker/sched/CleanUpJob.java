@@ -21,17 +21,19 @@ package io.galeb.services.healthchecker.sched;
 import io.galeb.core.logging.Logger;
 import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.HealthChecker;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
+@DisallowConcurrentExecution
 public class CleanUpJob implements Job {
 
     private Map<String, Future> futureMap;
@@ -51,13 +53,15 @@ public class CleanUpJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         init(context.getJobDetail().getJobDataMap());
-
-        Set<String> keys = new HashSet<>(futureMap.keySet());
-        keys.stream().forEach(key -> {
-            Future future = futureMap.get(key);
-            if (future.isDone() || future.isCancelled()) {
-                futureMap.remove(key);
-            }
-        });
+        long start = System.currentTimeMillis();
+        Set<Map.Entry<String, Future>> entries = futureMap.entrySet();
+        int initialSize = entries.size();
+        entries.stream()
+                .filter(entry -> entry.getValue() == null || entry.getValue().isDone() || entry.getValue().isCancelled())
+                .map(Map.Entry::getKey).forEach(futureMap::remove);
+        int totalRemoved = initialSize - entries.size();
+        long end = System.currentTimeMillis();
+        logger.ifPresent(log -> log.info(CleanUpJob.class.getSimpleName() + ": removed " +
+            totalRemoved + (totalRemoved > 1 ? " entries" : " entry") + " (" + (end - start) + " ms)"));
     }
 }
