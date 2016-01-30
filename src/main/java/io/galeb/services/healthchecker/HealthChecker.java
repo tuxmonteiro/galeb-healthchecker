@@ -124,6 +124,7 @@ public class HealthChecker extends AbstractService implements JobListener {
         jobdataMap.put(AbstractService.FARM, farm);
         jobdataMap.put(AbstractService.LOGGER, logger);
         jobdataMap.put(AbstractService.CACHEFACTORY, cacheFactory);
+        jobdataMap.put(AbstractService.CLUSTERLOCKER, clusterLocker);
         jobdataMap.put(FUTURE_MAP, futureMap);
 
         JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
