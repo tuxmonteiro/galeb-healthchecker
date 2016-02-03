@@ -238,7 +238,7 @@ public class RestAssuredTester implements TestExecutor {
             if (isOk) {
                 backend.setHealth(Backend.Health.HEALTHY);
             } else {
-                backend.setHealth(Backend.Health.DEADY);
+                backend.setHealth(Backend.Health.DEAD);
             }
             if (backend.getHealth()!=lastHealth) {
                 logger.ifPresent(log -> log.debug("New Health " + entity.compoundId() + " is "+ backend.getHealth().toString()));
