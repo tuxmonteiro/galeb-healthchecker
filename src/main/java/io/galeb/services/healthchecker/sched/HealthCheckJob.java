@@ -35,6 +35,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import io.galeb.core.cluster.ClusterLocker;
+import io.galeb.core.cluster.ignite.IgniteCacheFactory;
+import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.json.JsonObject;
 import io.galeb.services.healthchecker.testers.RestAssuredTester;
@@ -62,8 +64,9 @@ public class HealthCheckJob implements Job {
             String.valueOf(Runtime.getRuntime().availableProcessors())));
 
     private Optional<Logger> logger = Optional.empty();
-    private CacheFactory cacheFactory;
-    private ClusterLocker clusterLocker;
+    private CacheFactory cacheFactory = IgniteCacheFactory.getInstance();
+    private ClusterLocker clusterLocker = IgniteClusterLocker.INSTANCE;
+
     private final ExecutorService executor = Executors.newWorkStealingPool(threads);
     private Map<String, Future> futureMap = null;
 
@@ -71,12 +74,6 @@ public class HealthCheckJob implements Job {
     private void init(final JobDataMap jobDataMap) {
         if (!logger.isPresent()) {
             logger = Optional.ofNullable((Logger) jobDataMap.get(AbstractService.LOGGER));
-        }
-        if (cacheFactory == null) {
-            cacheFactory = (CacheFactory) jobDataMap.get(AbstractService.CACHEFACTORY);
-        }
-        if (clusterLocker == null) {
-            clusterLocker = (ClusterLocker) jobDataMap.get(AbstractService.CLUSTERLOCKER);
         }
         if (futureMap == null) {
             futureMap = (Map<String, Future>) jobDataMap.get(HealthChecker.FUTURE_MAP);

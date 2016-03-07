@@ -20,12 +20,17 @@ import static org.quartz.JobBuilder.newJob;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 
 import javax.annotation.PostConstruct;
 
-import io.galeb.services.healthchecker.sched.*;
+import io.galeb.core.cluster.ignite.IgniteCacheFactory;
+import io.galeb.core.cluster.ignite.IgniteClusterLocker;
+import io.galeb.services.healthchecker.sched.CleanUpJob;
+import io.galeb.services.healthchecker.sched.HealthCheckJob;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -64,9 +69,17 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     private final Map<String, Future> futureMap = new ConcurrentHashMap<>();
 
+    public HealthChecker() {
+        super();
+    }
+
     @PostConstruct
     public void init() {
-        super.prelaunch();
+        cacheFactory = IgniteCacheFactory.getInstance(this).start();
+        clusterLocker = IgniteClusterLocker.INSTANCE;
+        cacheFactory.setLogger(logger);
+        clusterLocker.setLogger(logger);
+
         setupScheduler();
         startJobs();
 
@@ -123,8 +136,6 @@ public class HealthChecker extends AbstractService implements JobListener {
         JobDataMap jobdataMap = new JobDataMap();
         jobdataMap.put(AbstractService.FARM, farm);
         jobdataMap.put(AbstractService.LOGGER, logger);
-        jobdataMap.put(AbstractService.CACHEFACTORY, cacheFactory);
-        jobdataMap.put(AbstractService.CLUSTERLOCKER, clusterLocker);
         jobdataMap.put(FUTURE_MAP, futureMap);
 
         JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
