@@ -65,7 +65,7 @@ public class HealthCheckJob implements Job {
 
     private Optional<Logger> logger = Optional.empty();
     private CacheFactory cacheFactory = IgniteCacheFactory.getInstance();
-    private ClusterLocker clusterLocker = IgniteClusterLocker.INSTANCE;
+    private ClusterLocker clusterLocker = IgniteClusterLocker.getInstance();
 
     private final ExecutorService executor = Executors.newWorkStealingPool(threads);
     private Map<String, Future> futureMap = null;
@@ -78,6 +78,7 @@ public class HealthCheckJob implements Job {
         if (futureMap == null) {
             futureMap = (Map<String, Future>) jobDataMap.get(HealthChecker.FUTURE_MAP);
         }
+        clusterLocker.setLogger(logger.get()).start();
     }
 
     @Override

@@ -75,10 +75,8 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     @PostConstruct
     public void init() {
-        cacheFactory = IgniteCacheFactory.getInstance(this).start();
-        clusterLocker = IgniteClusterLocker.INSTANCE;
-        cacheFactory.setLogger(logger);
-        clusterLocker.setLogger(logger);
+        cacheFactory = IgniteCacheFactory.getInstance(this).setLogger(logger).start();
+        clusterLocker = IgniteClusterLocker.getInstance().setLogger(logger).start();
 
         setupScheduler();
         startJobs();
