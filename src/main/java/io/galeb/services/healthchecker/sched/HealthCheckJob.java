@@ -34,9 +34,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import io.galeb.core.cluster.ClusterLocker;
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
-import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.json.JsonObject;
 import io.galeb.services.healthchecker.testers.RestAssuredTester;
@@ -65,7 +63,6 @@ public class HealthCheckJob implements Job {
 
     private Optional<Logger> logger = Optional.empty();
     private CacheFactory cacheFactory = IgniteCacheFactory.getInstance();
-    private ClusterLocker clusterLocker = IgniteClusterLocker.getInstance();
 
     private final ExecutorService executor = Executors.newWorkStealingPool(threads);
     private Map<String, Future> futureMap = null;
@@ -78,7 +75,6 @@ public class HealthCheckJob implements Job {
         if (futureMap == null) {
             futureMap = (Map<String, Future>) jobDataMap.get(HealthChecker.FUTURE_MAP);
         }
-        clusterLocker.setLogger(logger.get()).start();
     }
 
     @Override
@@ -95,16 +91,11 @@ public class HealthCheckJob implements Job {
         streamOfBackendPools.parallel().forEach(entry -> {
             BackendPool backendPool = (BackendPool) JsonObject.fromJson(entry.getValue(), BackendPool.class);
             String backendPoolId = backendPool.getId();
-            if (clusterLocker.lock(backendPoolId)) {
-                Stream<Cache.Entry<String, String>> streamOfBackends = StreamSupport.stream(backends.spliterator(), false);
-                streamOfBackends.map(entry2 -> (Backend) JsonObject.fromJson(entry2.getValue(), Backend.class))
-                        .filter(b -> b.getParentId().equals(backendPoolId))
-                        .forEach(backendPool::addBackend);
-                checkBackendPool(backendPool, getProperties(backendPool));
-                clusterLocker.release(backendPoolId);
-            } else {
-                logger.ifPresent(log -> log.info(backendPoolId + " locked by other process/node"));
-            }
+            Stream<Cache.Entry<String, String>> streamOfBackends = StreamSupport.stream(backends.spliterator(), false);
+            streamOfBackends.map(entry2 -> (Backend) JsonObject.fromJson(entry2.getValue(), Backend.class))
+                    .filter(b -> b.getParentId().equals(backendPoolId))
+                    .forEach(backendPool::addBackend);
+            checkBackendPool(backendPool, getProperties(backendPool));
         });
 
         logger.ifPresent(log -> log.debug("Job HealthCheck done."));
