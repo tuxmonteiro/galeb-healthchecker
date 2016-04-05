@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,13 +44,14 @@ import com.jayway.restassured.config.HttpClientConfig;
 import com.jayway.restassured.config.RedirectConfig;
 import com.jayway.restassured.config.RestAssuredConfig;
 
-import io.galeb.core.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.cache.Cache;
 
 public class RestAssuredTester implements TestExecutor {
 
-    private Optional<Logger> logger = Optional.empty();
+    private static final Logger LOGGER = LogManager.getLogger(RestAssuredTester.class);
 
     private String url = null;
     private String host = null;
@@ -123,12 +123,6 @@ public class RestAssuredTester implements TestExecutor {
     }
 
     @Override
-    public TestExecutor setLogger(Optional<Logger> logger) {
-        this.logger = logger;
-        return this;
-    }
-
-    @Override
     public TestExecutor reset() {
         url = null;
         host = null;
@@ -165,14 +159,14 @@ public class RestAssuredTester implements TestExecutor {
         try {
             future = executor.submit(new Task(request, url));
         } catch (RejectedExecutionException e) {
-            logger.ifPresent(log -> log.debug(e));
+            LOGGER.debug(e);
         }
 
         try {
             if (future != null) {
                 response = future.get(connectionTimeout, TimeUnit.MILLISECONDS);
             } else {
-                logger.ifPresent(log -> log.warn(url+" >>> NOT RUN - Task problem"));
+                LOGGER.warn(url+" >>> NOT RUN - Task problem");
             }
         } catch (Exception e) {
             if (future != null) {
@@ -183,7 +177,7 @@ public class RestAssuredTester implements TestExecutor {
                 tempMessage = "Connection Timeout ("+connectionTimeout+" ms)";
             }
             final String message = tempMessage;
-            logger.ifPresent(log -> log.warn(url+" >>> Backend FAIL ("+message+")"));
+            LOGGER.warn(url+" >>> Backend FAIL ("+message+")");
         } finally {
             executor.shutdownNow();
         }
@@ -194,9 +188,9 @@ public class RestAssuredTester implements TestExecutor {
         if (statusCode > 0) {
             try {
                 response.statusCode(statusCode);
-                logger.ifPresent(log -> log.debug(url+" > STATUS CODE MATCH ("+statusCode+")"));
+                LOGGER.debug(url+" > STATUS CODE MATCH ("+statusCode+")");
             } catch (AssertionError e) {
-                logger.ifPresent(log -> log.warn(url+" >>> STATUS CODE NOT MATCH ("+statusCode+")"));
+                LOGGER.warn(url+" >>> STATUS CODE NOT MATCH ("+statusCode+")");
                 notifyHealthOnCheck(false);
                 return;
             }
@@ -204,9 +198,9 @@ public class RestAssuredTester implements TestExecutor {
         if (body != null && !"".equals(body)) {
             try {
                 response.body(containsString(body));
-                logger.ifPresent(log -> log.debug(url+" > BODY MATCH ("+body+")"));
+                LOGGER.debug(url+" > BODY MATCH ("+body+")");
             } catch (AssertionError e) {
-                logger.ifPresent(log -> log.warn(url+" >>> BODY NOT MATCH ("+body+")"));
+                LOGGER.warn(url+" >>> BODY NOT MATCH ("+body+")");
                 notifyHealthOnCheck(false);
                 return;
             }
@@ -234,24 +228,24 @@ public class RestAssuredTester implements TestExecutor {
         if (entity instanceof Backend) {
             Backend backend = (Backend)entity;
             Backend.Health lastHealth = backend.getHealth();
-            logger.ifPresent(log -> log.debug("Last Health " + entity.compoundId() + " is "+ lastHealth.toString()));
+            LOGGER.debug("Last Health " + entity.compoundId() + " is "+ lastHealth.toString());
             if (isOk) {
                 backend.setHealth(Backend.Health.HEALTHY);
             } else {
                 backend.setHealth(Backend.Health.DEAD);
             }
             if (backend.getHealth()!=lastHealth) {
-                logger.ifPresent(log -> log.debug("New Health " + entity.compoundId() + " is "+ backend.getHealth().toString()));
+                LOGGER.debug("New Health " + entity.compoundId() + " is "+ backend.getHealth().toString());
                 String hostWithPort = backend.getId();
                 if (isOk) {
-                    logger.ifPresent(log -> log.info(hostWithPort+" is OK"));
+                    LOGGER.info(hostWithPort+" is OK");
                 } else {
-                    logger.ifPresent(log -> log.warn(hostWithPort+" is FAILED"));
+                    LOGGER.warn(hostWithPort+" is FAILED");
                 }
                 cache.replace(entity.compoundId(), JsonObject.toJsonString(backend));
             }
         } else {
-            logger.ifPresent(log -> log.warn("Entity is NOT Backend"));
+            LOGGER.warn("Entity is NOT Backend");
         }
     }
 

@@ -31,6 +31,8 @@ import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.services.healthchecker.sched.CleanUpJob;
 import io.galeb.services.healthchecker.sched.HealthCheckJob;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -44,6 +46,8 @@ import org.quartz.impl.StdSchedulerFactory;
 import io.galeb.core.services.AbstractService;
 
 public class HealthChecker extends AbstractService implements JobListener {
+
+    private static final Logger LOGGER = LogManager.getLogger(HealthChecker.class);
 
     public static final String HEALTHCHECKER_USERAGENT        = "Galeb_HealthChecker/1.0";
 
@@ -75,13 +79,13 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     @PostConstruct
     public void init() {
-        cacheFactory = IgniteCacheFactory.getInstance().setLogger(logger).start();
-        clusterLocker = IgniteClusterLocker.getInstance().setLogger(logger).start();
+        cacheFactory = IgniteCacheFactory.getInstance().start();
+        clusterLocker = IgniteClusterLocker.getInstance().start();
 
         setupScheduler();
         startJobs();
 
-        logger.debug(String.format("%s ready", toString()));
+        LOGGER.debug(String.format("%s ready", toString()));
     }
 
     private void setupScheduler() {
@@ -91,7 +95,7 @@ public class HealthChecker extends AbstractService implements JobListener {
 
             scheduler.start();
         } catch (SchedulerException e) {
-            logger.error(e);
+            LOGGER.error(e);
         }
     }
 
@@ -104,7 +108,7 @@ public class HealthChecker extends AbstractService implements JobListener {
                 startCleanUp(interval);
             }
         } catch (SchedulerException e) {
-            logger.error(e);
+            LOGGER.error(e);
         }
     }
 
@@ -115,7 +119,6 @@ public class HealthChecker extends AbstractService implements JobListener {
                 .build();
 
         JobDataMap cleanUpMap = new JobDataMap();
-        cleanUpMap.put(AbstractService.LOGGER, logger);
         cleanUpMap.put(FUTURE_MAP, futureMap);
 
         JobDetail cleanUpJob = newJob(CleanUpJob.class).withIdentity(CleanUpJob.class.getName())
@@ -132,8 +135,7 @@ public class HealthChecker extends AbstractService implements JobListener {
                                       .build();
 
         JobDataMap jobdataMap = new JobDataMap();
-        jobdataMap.put(AbstractService.FARM, farm);
-        jobdataMap.put(AbstractService.LOGGER, logger);
+        jobdataMap.put(AbstractService.FARM_KEY, farm);
         jobdataMap.put(FUTURE_MAP, futureMap);
 
         JobDetail healthCheckJob = newJob(HealthCheckJob.class).withIdentity(HealthCheckJob.class.getName())
@@ -150,18 +152,18 @@ public class HealthChecker extends AbstractService implements JobListener {
 
     @Override
     public void jobToBeExecuted(JobExecutionContext context) {
-        logger.debug(context.getJobDetail().getKey().getName()+" to be executed");
+        LOGGER.debug(context.getJobDetail().getKey().getName()+" to be executed");
     }
 
     @Override
     public void jobExecutionVetoed(JobExecutionContext context) {
-        logger.debug(context.getJobDetail().getKey().getName()+" vetoed");
+        LOGGER.debug(context.getJobDetail().getKey().getName()+" vetoed");
     }
 
     @Override
     public void jobWasExecuted(JobExecutionContext context,
             JobExecutionException jobException) {
-        logger.debug(context.getJobDetail().getKey().getName()+" was executed");
+        LOGGER.debug(context.getJobDetail().getKey().getName()+" was executed");
     }
 
 }

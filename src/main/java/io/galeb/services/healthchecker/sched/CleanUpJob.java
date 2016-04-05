@@ -18,9 +18,9 @@
 
 package io.galeb.services.healthchecker.sched;
 
-import io.galeb.core.logging.Logger;
-import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.HealthChecker;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -28,22 +28,18 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 
 @DisallowConcurrentExecution
 public class CleanUpJob implements Job {
 
-    private Map<String, Future> futureMap;
+    private static final Logger LOGGER = LogManager.getLogger(CleanUpJob.class);
 
-    private Optional<Logger> logger = Optional.empty();
+    private Map<String, Future> futureMap;
 
     @SuppressWarnings("unchecked")
     public void init(JobDataMap jobDataMap) {
-        if (!logger.isPresent()) {
-            logger = Optional.ofNullable((Logger) jobDataMap.get(AbstractService.LOGGER));
-        }
         if (futureMap == null) {
             futureMap = (Map<String, Future>) jobDataMap.get(HealthChecker.FUTURE_MAP);
         }
@@ -60,7 +56,7 @@ public class CleanUpJob implements Job {
                 .map(Map.Entry::getKey).forEach(futureMap::remove);
         int totalRemoved = initialSize - entries.size();
         long end = System.currentTimeMillis();
-        logger.ifPresent(log -> log.info(CleanUpJob.class.getSimpleName() + ": removed " +
-            totalRemoved + (totalRemoved > 1 ? " entries" : " entry") + " (" + (end - start) + " ms)"));
+        LOGGER.info(CleanUpJob.class.getSimpleName() + ": removed " +
+            totalRemoved + (totalRemoved > 1 ? " entries" : " entry") + " (" + (end - start) + " ms)");
     }
 }

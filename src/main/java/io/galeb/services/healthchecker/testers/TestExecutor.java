@@ -1,8 +1,5 @@
 package io.galeb.services.healthchecker.testers;
 
-import java.util.Optional;
-
-import io.galeb.core.logging.Logger;
 import io.galeb.core.model.Entity;
 
 import javax.cache.Cache;
@@ -24,8 +21,6 @@ public interface TestExecutor {
     default TestExecutor followRedirects(Boolean follow) {
         return this;
     };
-
-    default TestExecutor setLogger(Optional<Logger>  logger) { return this; }
 
     default TestExecutor reset() { return this; }
 
