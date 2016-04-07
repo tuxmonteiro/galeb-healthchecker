@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.galeb</groupId>
-  <artifactId>galeb-healthchecker</artifactId>
+  <artifactId>galeb-health</artifactId>
   <version>3.2.0-SNAPSHOT</version>
 
   <licenses>
