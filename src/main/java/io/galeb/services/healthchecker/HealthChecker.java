@@ -47,7 +47,7 @@ import io.galeb.core.services.AbstractService;
 
 public class HealthChecker extends AbstractService implements JobListener {
 
-    private static final Logger LOGGER = LogManager.getLogger(HealthChecker.class);
+    private static final Logger LOGGER = LogManager.getLogger();
 
     public static final String HEALTHCHECKER_USERAGENT        = "Galeb_HealthChecker/1.0";
 

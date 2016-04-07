@@ -34,7 +34,7 @@ import java.util.concurrent.Future;
 @DisallowConcurrentExecution
 public class CleanUpJob implements Job {
 
-    private static final Logger LOGGER = LogManager.getLogger(CleanUpJob.class);
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private Map<String, Future> futureMap;
 

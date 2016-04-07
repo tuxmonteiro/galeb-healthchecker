@@ -57,7 +57,7 @@ import javax.cache.Cache;
 @DisallowConcurrentExecution
 public class HealthCheckJob implements Job {
 
-    private static final Logger LOGGER = LogManager.getLogger(HealthCheckJob.class);
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private static final int CONN_TIMEOUT_DELTA = 1000;
     private static Integer threads = Integer.parseInt(System.getProperty(PROP_HEALTHCHECKER_THREADS,

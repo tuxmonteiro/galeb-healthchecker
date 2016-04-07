@@ -51,7 +51,7 @@ import javax.cache.Cache;
 
 public class RestAssuredTester implements TestExecutor {
 
-    private static final Logger LOGGER = LogManager.getLogger(RestAssuredTester.class);
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private String url = null;
     private String host = null;
