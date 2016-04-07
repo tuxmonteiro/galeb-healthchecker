@@ -37,6 +37,8 @@ import java.util.stream.StreamSupport;
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.json.JsonObject;
+import io.galeb.core.model.Farm;
+import io.galeb.core.services.AbstractService;
 import io.galeb.services.healthchecker.testers.RestAssuredTester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,11 +69,15 @@ public class HealthCheckJob implements Job {
 
     private final ExecutorService executor = Executors.newWorkStealingPool(threads);
     private Map<String, Future> futureMap = null;
+    private Farm farm = null;
 
     @SuppressWarnings("unchecked")
     private void init(final JobDataMap jobDataMap) {
         if (futureMap == null) {
             futureMap = (Map<String, Future>) jobDataMap.get(HealthChecker.FUTURE_MAP);
+        }
+        if (farm == null) {
+            farm = (Farm) jobDataMap.get(AbstractService.FARM_KEY);
         }
     }
 
@@ -87,13 +93,12 @@ public class HealthCheckJob implements Job {
         Stream<Cache.Entry<String, String>> streamOfBackendPools = StreamSupport.stream(pools.spliterator(), true);
 
         streamOfBackendPools.parallel().forEach(entry -> {
-            BackendPool backendPool = (BackendPool) JsonObject.fromJson(entry.getValue(), BackendPool.class);
-            String backendPoolId = backendPool.getId();
-            Stream<Cache.Entry<String, String>> streamOfBackends = StreamSupport.stream(backends.spliterator(), false);
-            streamOfBackends.map(entry2 -> (Backend) JsonObject.fromJson(entry2.getValue(), Backend.class))
-                    .filter(b -> b.getParentId().equals(backendPoolId))
-                    .forEach(backendPool::addBackend);
-            checkBackendPool(backendPool, getProperties(backendPool));
+            final BackendPool backendPool = (BackendPool) JsonObject.fromJson(entry.getValue(), BackendPool.class);
+            final String backendPoolId = backendPool.getId();
+            final Stream<Backend> streamOfBackends = StreamSupport.stream(backends.spliterator(), false)
+                    .map(entry2 -> (Backend) JsonObject.fromJson(entry2.getValue(), Backend.class))
+                    .filter(b -> b.getParentId().equals(backendPoolId));
+            checkBackendPool(streamOfBackends, getProperties(backendPool));
         });
 
         LOGGER.debug("Job HealthCheck done.");
@@ -121,14 +126,14 @@ public class HealthCheckJob implements Job {
         return Collections.unmodifiableMap(properties);
     }
 
-    private void checkBackendPool(final BackendPool pool, final Map<String, Object> properties) {
+    private void checkBackendPool(final Stream<Backend> streamOfBackends, final Map<String, Object> properties) {
 
         final String hcBody = (String) properties.get(PROP_HEALTHCHECK_RETURN);
         final String hcPath = (String) properties.get(PROP_HEALTHCHECK_PATH);
         final String hcHost = (String) properties.get(PROP_HEALTHCHECK_HOST);
         final int statusCode = (int) properties.get(PROP_HEALTHCHECK_CODE);
 
-        pool.getBackends().stream().forEach(backend ->
+        streamOfBackends.forEach(backend ->
         {
             String connTimeOut = System.getProperty(PROP_HEALTHCHECKER_INTERVAL, "10000");
             String followRedirects = System.getProperty(PROP_HEALTHCHECKER_FOLLOW_REDIR);
@@ -141,7 +146,7 @@ public class HealthCheckJob implements Job {
                     Future future = futureMap.get(futureKey);
                     if (future == null || future.isDone() || future.isCancelled()) {
                         LOGGER.debug("Processing " + futureKey);
-                        future = executor.submit((Runnable) () -> new RestAssuredTester()
+                        future = executor.submit(() -> new RestAssuredTester()
                                 .reset()
                                 .withUrl(fullPath)
                                 .withHost(hcHost)
