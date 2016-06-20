@@ -3,7 +3,7 @@
 
   <groupId>io.galeb</groupId>
   <artifactId>galeb-health</artifactId>
-  <version>3.2.2-SNAPSHOT</version>
+  <version>3.2.4-SNAPSHOT</version>
 
   <licenses>
     <license>
@@ -20,7 +20,6 @@
     <google.gson.version>2.3.1</google.gson.version>
     <org.jboss.weld.version>2.2.8.Final</org.jboss.weld.version>
     <org.jboss.logging.version>3.2.0.Final</org.jboss.logging.version>
-    <org.apache.logging.log4j.version>2.1</org.apache.logging.log4j.version>
     <org.apache.commons.commons-lang3.version>3.3.2</org.apache.commons.commons-lang3.version>
     <org.apache.httpcomponents.version>4.0.2</org.apache.httpcomponents.version>
     <org.quartz-scheduler.version>2.2.1</org.quartz-scheduler.version>
@@ -80,26 +79,6 @@
           <artifactId>jboss-logging</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>${org.apache.logging.log4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${org.apache.logging.log4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-jul</artifactId>
-      <version>${org.apache.logging.log4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <version>${org.apache.logging.log4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.quartz-scheduler</groupId>
@@ -172,6 +151,7 @@
             <argument>-Xms1024m</argument>
             <argument>-Xmx1024m</argument>
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
+            <argument>-Dio.galeb.cluster.conf=cluster.xml</argument>
             <argument>-Dio.galeb.services.healthchecker.connectionTimeout=15000</argument>
             <argument>-Dio.galeb.services.healthchecker.followRedirects=false</argument>
             <argument>-DIGNITE_JETTY_PORT=50004</argument>
