@@ -156,7 +156,7 @@
             <argument>-Dio.galeb.services.healthchecker.followRedirects=false</argument>
             <argument>-DIGNITE_JETTY_PORT=50004</argument>
             <argument>-jar</argument>
-            <argument>target/galeb-healthchecker-${project.version}-uber.jar</argument>
+            <argument>target/galeb-health-${project.version}-uber.jar</argument>
           </arguments>
         </configuration>
       </plugin>
